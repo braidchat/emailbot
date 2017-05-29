@@ -10,8 +10,7 @@ defmodule BraidMail.Application do
 
     # Define workers and child supervisors to be supervised
     children = [
-      # Starts a worker by calling: BraidMail.Worker.start_link(arg1, arg2, arg3)
-      # worker(BraidMail.Worker, [arg1, arg2, arg3]),
+      Plug.Adapters.Cowboy.child_spec(:http, BraidMail.Routes, [], port: 4040),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
