@@ -15,7 +15,7 @@ defmodule BraidMail.Routes do
   end
 
   put "/message" do
-    IO.puts "Got message #{inspect conn.body_params}"
+    spawn BraidMail.Messaging, :handle_message, [conn.body_params]
     conn
     |> Plug.Conn.put_resp_content_type("text/plain")
     |> Plug.Conn.send_resp(200, "message received")
