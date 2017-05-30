@@ -3,20 +3,25 @@ defmodule BraidMail.Routes do
   Routes for the email bot
   """
 
-  use BraidMail.Router
+  use Plug.Router
 
-  def route("GET", ["hello", foo], conn) do
+  plug :match
+  plug Plug.Parsers, parsers: [Elixir.BraidMail.Parsers.Transit],
+                     pass: ["application/transit+msgpack"]
+  plug :dispatch
+
+  get "/hello/:foo" do
     conn |> Plug.Conn.send_resp(200, "Hello #{foo}")
   end
 
-  def route("PUT", ["message"], conn) do
+  put "/message" do
     IO.puts "Got message #{inspect conn.body_params}"
     conn
     |> Plug.Conn.put_resp_content_type("text/plain")
     |> Plug.Conn.send_resp(200, "message received")
   end
 
-  def route(_method, _path, conn) do
+  match _ do
     conn |> Plug.Conn.send_resp(404, "Dunno about that?")
   end
 end
