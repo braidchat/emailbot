@@ -3,7 +3,17 @@ defmodule BraidMail.Messaging do
   Module for handling messages from braid
   """
 
-  def handle_message(%{content: content} = msg) do
-    IO.puts "Received #{content} #{inspect msg}"
+  def handle_message(%{content: body} = msg) do
+    bot_name = Application.fetch_env!(:braidmail, :bot_name)
+    prefix = "/" <> bot_name <> " "
+    if  String.starts_with?(body, prefix) do
+      handle_mention(msg)
+    else
+      IO.puts "Got message #{body}"
+    end
+  end
+
+  defp handle_mention(msg) do
+    IO.puts "Mentioned: #{inspect msg}"
   end
 end
