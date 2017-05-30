@@ -19,7 +19,8 @@ defmodule BraidMail.Transit do
       ...> ["~#u", [-3600665235774028423, -9179438085886213543]]],
       ...> "~:mentioned-user-ids" => [["~#u", [6364412569462852024, -5836293616197882762]]],
       ...> "~:thread-id" => ["~#u", [6283173812582826269, -4670737039013049002]],
-      ...> "~:user-id" => ["~#u", [6293933501437199116, -7244934908353538652]]})
+      ...> "~:user-id" => ["~#u", [6293933501437199116, -7244934908353538652]],
+      ...> "~:created-at" => ["~#m", 1496175036723]})
       %{content: "bot message with mentions",
         "group-id": "urn:uuid:570fce10-9312-4550-9525-460c57fd9229",
         id: "urn:uuid:57589564-3a2d-47d9-8334-58c36750d3e8",
@@ -27,7 +28,8 @@ defmodule BraidMail.Transit do
                               "urn:uuid:ce07de0b-9297-4579-809c-15b2150f8259"],
         "mentioned-user-ids": ["urn:uuid:5852ef83-06dd-49b8-af01-51e0c9a52c76"],
         "thread-id": "urn:uuid:5732514a-f909-411d-bf2e-3568de5e0d56",
-        "user-id": "urn:uuid:57588b2c-4118-430c-9b74-d2160ec295a4"}
+        "user-id": "urn:uuid:57588b2c-4118-430c-9b74-d2160ec295a4",
+        "created-at": ~N[2017-05-30 20:10:36.723]}
   """
   def from_transit(map) do
     Enum.into map, %{}, fn {k, v} ->
@@ -41,6 +43,10 @@ defmodule BraidMail.Transit do
 
   defp parse_transit_item(["~#u", [hi64, lo64]]) do
     UUID.binary_to_string!(<<hi64::64>> <> <<lo64::64>>, :urn)
+  end
+
+  defp parse_transit_item(["~#m", msecs]) do
+    msecs |> Timex.from_unix(:milliseconds) |> Timex.to_naive_datetime
   end
 
   defp parse_transit_item(arr) when is_list(arr) do
@@ -60,10 +66,12 @@ defmodule BraidMail.Transit do
       iex> BraidMail.Transit.to_transit(
       ...> %{thing: "hello",
       ...> "group-id": "urn:uuid:00210cbc-fdef-465b-a8cd-3a439a3112ae",
+      ...> "created-at": ~N[2017-05-30 20:10:36.723],
       ...> "mentions": ["urn:uuid:9bbb5c63-6432-4212-bcd5-c5ed944dd6e4",
       ...>              "urn:uuid:f5bcb891-153f-4b8d-a114-b0260437811d"]})
       %{"~:thing" => "hello",
         "~:group-id" => ["~#u", [9302680085153371, -6283301843087846738]],
+        "~:created-at" => ["~#m", 1496175036723],
         "~:mentions" => [["~#u", [-7225079595233295854, -4839744600353679644]],
                          ["~#u", [-739513305529365619, -6839648256742948579]]]}
   """
@@ -79,6 +87,12 @@ defmodule BraidMail.Transit do
 
   defp unparse_transit_item(arr) when is_list(arr) do
     Enum.map arr, &unparse_transit_item/1
+  end
+
+  defp unparse_transit_item(%NaiveDateTime{} = dt) do
+    secs = Timex.to_unix(dt)
+    {usecs, _} = dt.microsecond
+    ["~#m", (secs * 1000) + round(usecs / 1000)]
   end
 
   defp unparse_transit_item(("urn:uuid:" <> _) = uuid) do
