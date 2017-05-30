@@ -21,13 +21,13 @@ defmodule BraidMail.Transit do
       ...> "~:thread-id" => ["~#u", [6283173812582826269, -4670737039013049002]],
       ...> "~:user-id" => ["~#u", [6293933501437199116, -7244934908353538652]]})
       %{content: "bot message with mentions",
-        "group-id": "570fce10-9312-4550-9525-460c57fd9229",
-        id: "57589564-3a2d-47d9-8334-58c36750d3e8",
-        "mentioned-tag-ids": ["b97d5dcb-6258-4ccd-911e-c5d17b91abb7",
-                              "ce07de0b-9297-4579-809c-15b2150f8259"],
-        "mentioned-user-ids": ["5852ef83-06dd-49b8-af01-51e0c9a52c76"],
-        "thread-id": "5732514a-f909-411d-bf2e-3568de5e0d56",
-        "user-id": "57588b2c-4118-430c-9b74-d2160ec295a4"}
+        "group-id": "urn:uuid:570fce10-9312-4550-9525-460c57fd9229",
+        id: "urn:uuid:57589564-3a2d-47d9-8334-58c36750d3e8",
+        "mentioned-tag-ids": ["urn:uuid:b97d5dcb-6258-4ccd-911e-c5d17b91abb7",
+                              "urn:uuid:ce07de0b-9297-4579-809c-15b2150f8259"],
+        "mentioned-user-ids": ["urn:uuid:5852ef83-06dd-49b8-af01-51e0c9a52c76"],
+        "thread-id": "urn:uuid:5732514a-f909-411d-bf2e-3568de5e0d56",
+        "user-id": "urn:uuid:57588b2c-4118-430c-9b74-d2160ec295a4"}
   """
   def from_transit(map) do
     Enum.into map, %{}, fn {k, v} ->
@@ -40,7 +40,7 @@ defmodule BraidMail.Transit do
   end
 
   defp parse_transit_item(["~#u", [hi64, lo64]]) do
-    UUID.binary_to_string!(<<hi64::64>> <> <<lo64::64>>)
+    UUID.binary_to_string!(<<hi64::64>> <> <<lo64::64>>, :urn)
   end
 
   defp parse_transit_item(arr) when is_list(arr) do
@@ -49,6 +49,52 @@ defmodule BraidMail.Transit do
 
   defp parse_transit_item(x) do
     x
+  end
+
+  @doc """
+  Unparses a map into a format suitable to being converted to MessagePack or
+  JSON and sent back
+
+  ## Example
+
+      iex> BraidMail.Transit.to_transit(
+      ...> %{thing: "hello",
+      ...> "group-id": "urn:uuid:00210cbc-fdef-465b-a8cd-3a439a3112ae",
+      ...> "mentions": ["urn:uuid:9bbb5c63-6432-4212-bcd5-c5ed944dd6e4",
+      ...>              "urn:uuid:f5bcb891-153f-4b8d-a114-b0260437811d"]})
+      %{"~:thing" => "hello",
+        "~:group-id" => ["~#u", [9302680085153371, -6283301843087846738]],
+        "~:mentions" => [["~#u", [-7225079595233295854, -4839744600353679644]],
+                         ["~#u", [-739513305529365619, -6839648256742948579]]]}
+  """
+  def to_transit(map) do
+    Enum.into map, %{}, fn {k, v} ->
+      {unparse_transit_item(k), unparse_transit_item(v)}
+    end
+  end
+
+  defp unparse_transit_item(at) when is_atom(at) do
+    "~:" <> Atom.to_string(at)
+  end
+
+  defp unparse_transit_item(arr) when is_list(arr) do
+    Enum.map arr, &unparse_transit_item/1
+  end
+
+  defp unparse_transit_item(("urn:uuid:" <> _) = uuid) do
+    <<hi64::64, lo64::64>> = UUID.string_to_binary!(uuid)
+    ["~#u", [signed64(hi64), signed64(lo64)]]
+  end
+
+  defp unparse_transit_item(x) do
+    x
+  end
+
+  # Make the given number a signed 64-bit integer
+  # We need this for sending UUIDs
+  defp signed64(n) do
+    use Bitwise
+    n - (2 * (n &&& (1 <<< 63)))
   end
 
 end
