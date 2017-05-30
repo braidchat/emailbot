@@ -10,11 +10,11 @@ use Mix.Config
 
 # You can configure for your application as:
 #
-#     config :emailbot, key: :value
+#     config :braidmail, key: :value
 #
 # And access this configuration in your application as:
 #
-#     Application.get_env(:emailbot, :key)
+#     Application.get_env(:braidmail, :key)
 #
 # Or configure a 3rd-party app:
 #
@@ -28,3 +28,4 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 #     import_config "#{Mix.env}.exs"
+import_config "#{Mix.env}.exs"

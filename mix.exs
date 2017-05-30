@@ -16,6 +16,11 @@ defmodule BraidMail.Mixfile do
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
     [extra_applications: [:logger, :cowboy, :plug],
+     env: [listen_port: 4040,
+           braid_token: "",
+           braid_id: "",
+           braid_api_server: "https://api.braid.chat",
+         ],
      mod: {BraidMail.Application, []}]
   end
 
