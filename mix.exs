@@ -15,11 +15,12 @@ defmodule BraidMail.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger, :cowboy, :plug],
+    [extra_applications: [:logger, :cowboy, :plug, :timex],
      env: [listen_port: 4040,
            braid_token: "",
            braid_id: "",
            braid_api_server: "https://api.braid.chat",
+           bot_name: "emailbot",
          ],
      mod: {BraidMail.Application, []}]
   end
@@ -38,6 +39,7 @@ defmodule BraidMail.Mixfile do
      {:plug, "~> 1.0"},
      {:message_pack, "~> 0.2.0"},
      {:uuid, "~> 1.1"},
+     {:timex, "~> 3.0"},
    ]
   end
 end
