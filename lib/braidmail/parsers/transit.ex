@@ -33,7 +33,7 @@ defmodule BraidMail.Parsers.Transit do
   end
 
   defp decode({:ok, body, conn}) do
-    case MessagePack.unpack!(body) do
+    case MessagePack.unpack(body) do
       {:ok, parsed} -> {:ok, BraidMail.Transit.from_transit(parsed), conn}
       _ -> raise Plug.Parsers.ParseError
     end
