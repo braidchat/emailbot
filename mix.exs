@@ -32,6 +32,7 @@ defmodule BraidMail.Mixfile do
     [{:cowboy, "~> 1.0.0"},
      {:plug, "~> 1.0"},
      {:message_pack, "~> 0.2.0"},
+     {:uuid, "~> 1.1"},
    ]
   end
 end
