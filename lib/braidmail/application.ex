@@ -9,10 +9,10 @@ defmodule BraidMail.Application do
     import Supervisor.Spec, warn: false
 
     # Define workers and child supervisors to be supervised
+    server_port = Application.fetch_env!(:braidmail, :listen_port)
     children = [
       Plug.Adapters.Cowboy.child_spec(:http, BraidMail.Routes, [],
-                                      port: Application.fetch_env!(:braidmail,
-                                                                   :listen_port)),
+                                      port: server_port),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
