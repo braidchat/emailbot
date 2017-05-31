@@ -6,6 +6,10 @@ A [Braid Chat](https://github.com/braidchat/braid) bot that lets you manage your
 
 Create config files `config/dev.exs` and `config/prod.exs`.
 
+Run `mix deps.get` to fetch all dependencies.
+
+Run `mix ecto.create` and `mix ecto.migrate` to set up the database.
+
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 by adding `braidmail` to your list of dependencies in `mix.exs`:
 
