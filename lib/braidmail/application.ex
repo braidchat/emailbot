@@ -13,6 +13,7 @@ defmodule BraidMail.Application do
     children = [
       Plug.Adapters.Cowboy.child_spec(:http, BraidMail.Routes, [],
                                       port: server_port),
+      supervisor(BraidMail.Repo, []),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
