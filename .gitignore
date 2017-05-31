@@ -22,3 +22,7 @@ erl_crash.dump
 # Ignore dev & prod config files
 config/dev.exs
 config/prod.exs
+
+Mnesia.nonode@nohost/
+
+tmp/
