@@ -3,6 +3,35 @@ defmodule BraidMail.Routes do
   Routes for the email bot
   """
 
+  alias Plug.Conn
+
+  defmodule VerifyBraidSignature do
+    @behaviour Plug
+
+    def init(_opts) do
+      Application.fetch_env!(:braidmail, :braid_token)
+    end
+
+    def call(conn, secret) do
+      with [sig_hex] <- Conn.get_req_header(conn, "x-braid-signature"),
+           {:ok, sig} <- Base.decode16(sig_hex, case: :mixed),
+           {:ok, body, conn} <- Conn.read_body(conn),
+           :ok <- verify_signature(sig, body, secret) do
+        conn |> Conn.assign(:body, body)
+      else
+        _ -> Conn.send_resp(conn, 403, "Invalid signature for message")
+      end
+    end
+
+    defp verify_signature(signature, body, secret) do
+      if signature == :crypto.hmac(:sha256, secret, body) do
+        :ok
+      else
+        :error
+      end
+    end
+  end
+
   use Plug.Router
 
   plug :match
