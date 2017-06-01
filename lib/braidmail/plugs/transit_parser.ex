@@ -20,8 +20,7 @@ defmodule BraidMail.Plugs.TransitParser do
 
   defp decode(conn) do
     body = conn.assigns[:body] ||
-      with {:ok, body, _} <- Conn.read_body(conn),
-           do: body
+           with {:ok, body, _} <- Conn.read_body(conn), do: body
     case MessagePack.unpack(body) do
       {:ok, parsed} ->
         %{conn | body_params: BraidMail.Transit.from_transit(parsed)}
