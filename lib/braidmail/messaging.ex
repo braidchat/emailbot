@@ -12,10 +12,8 @@ defmodule BraidMail.Messaging do
     bot_name = Application.fetch_env!(:braidmail, :bot_name)
     prefix = "/" <> bot_name <> " "
     cond do
-      String.starts_with?(body, prefix) ->
-        handle_mention(msg)
-      Repo.get_by(Thread, braid_id: thread_id) ->
-        handle_email_msg(msg)
+      String.starts_with?(body, prefix) -> handle_mention(msg)
+      Repo.get_by(Thread, braid_id: thread_id) -> handle_email_msg(msg)
       true -> IO.puts "Got message #{body}"
     end
   end
