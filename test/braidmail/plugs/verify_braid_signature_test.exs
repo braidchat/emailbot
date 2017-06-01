@@ -1,8 +1,8 @@
-defmodule BraidMail.Routes.VerifyBraidSignatureTest do
+defmodule BraidMail.Plugs.VerifyBraidSignatureTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
-  alias BraidMail.Routes.VerifyBraidSignature
+  alias BraidMail.Plugs.VerifyBraidSignature
 
   @opts VerifyBraidSignature.init([])
 
@@ -15,6 +15,7 @@ defmodule BraidMail.Routes.VerifyBraidSignatureTest do
     conn = VerifyBraidSignature.call(conn, @opts)
 
     assert conn.state == :unset
+    assert conn.assigns[:body] == "something something"
   end
 
   test "Rejects bad signatures" do
