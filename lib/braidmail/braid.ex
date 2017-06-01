@@ -30,7 +30,7 @@ defmodule BraidMail.Braid do
   @doc """
   Create a new message that will be in reply to `msg` with the body `reply`.
   """
-  def make_response(%{"thread-id": thread_id} = msg, reply) do
+  def make_response(%{"thread-id": thread_id}, reply) do
     %{id: UUID.uuid4(:urn),
       "thread-id": thread_id,
       content: reply,

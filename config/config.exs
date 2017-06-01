@@ -20,6 +20,15 @@ use Mix.Config
 #
 #     config :logger, level: :info
 #
+config :ecto_mnesia,
+  host: {:system, :atom, "MNESIA_HOST", Kernel.node()},
+  storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
+
+config :braidmail,
+  ecto_repos: [BraidMail.Repo]
+
+config :braidmail, BraidMail.Repo,
+  adapter: EctoMnesia.Adapter
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment
