@@ -1,4 +1,4 @@
-defmodule BraidMail.Schemas.Threads do
+defmodule BraidMail.Schemas.Thread do
   @moduledoc """
   DB schema for the threads that correspond to emails
   """
@@ -11,7 +11,7 @@ defmodule BraidMail.Schemas.Threads do
   end
 end
 
-defmodule BraidMail.Schemas.Users do
+defmodule BraidMail.Schemas.User do
   @moduledoc """
   DB schema for relating braid users & gmail api tokens
   """
