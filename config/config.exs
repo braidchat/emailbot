@@ -25,7 +25,8 @@ config :ecto_mnesia,
   storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
 
 config :braidmail,
-  ecto_repos: [BraidMail.Repo]
+  ecto_repos: [BraidMail.Repo],
+  bot_name: "emailbot"
 
 config :braidmail, BraidMail.Repo,
   adapter: EctoMnesia.Adapter
