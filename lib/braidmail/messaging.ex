@@ -35,7 +35,7 @@ defmodule BraidMail.Messaging do
     end
   end
 
-  defp handle_email_msg(%{content: body, "thread-id": thread_id} = msg) do
+  defp handle_email_msg(%{content: _body, "thread-id": _thread_id} = _msg) do
   end
 
   defp uuid2mention("urn:uuid:" <> uuid) do
