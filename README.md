@@ -37,6 +37,8 @@ Put the "client id" value in the config under the key `:gmail_id` and the "clien
 The "Authorized JavaScript origins" should include `https://braid.chat` (or whatever the Braid server you will be using the bot with).
 The "Authorized redirect URIs" should include whatever address the bot is accessible at (in dev, you may want to use [ngrok](https://ngrok.com/) to test webhooks; you can add that address too).
 
+Put the URI you set as the authorized redirect URI in the config as `:gmail_redirect_uri`.
+
 ## Installation
 
 <!-- TODO -->
