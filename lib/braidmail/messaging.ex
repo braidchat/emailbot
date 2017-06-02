@@ -24,7 +24,6 @@ defmodule BraidMail.Messaging do
   """
 
   defp handle_mention(%{"user-id": user_id} = msg) do
-    IO.puts "Mentioned: #{inspect msg}"
     if Repo.get_by(User, braid_id: user_id) do
       msg
         |> Braid.make_response("Hi again! " <> uuid2mention(user_id))
