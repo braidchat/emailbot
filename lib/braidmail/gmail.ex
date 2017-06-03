@@ -34,17 +34,6 @@ defmodule BraidMail.Gmail do
   @doc """
   Verify the state token after passing through the OAuth flow.
   Returns the `{:ok, user_id}` if the HMAC is valid, `:error` otherwise
-
-  ## Example
-
-
-      iex> "urn:uuid:31f3e4d4-597d-4d97-aa6a-0f8bb4e1bdb6" |>
-      ...> BraidMail.Gmail.state_token |>
-      ...> BraidMail.Gmail.verify_state
-      {:ok, "urn:uuid:31f3e4d4-597d-4d97-aa6a-0f8bb4e1bdb6"}
-
-      iex> BraidMail.Gmail.verify_state("urn:uuid:41f3e4d4-597d-4d97-aa6a-0f8bb4e1bdb6;hDdJNbMvOl46pA;jrIZuLElkhL+317EixqFHNjVP3sz09iRd0ZtUw7srJg")
-      :error
   """
   def verify_state(state) do
     [user_id, nonce, hmac] = String.split(state, ";")
