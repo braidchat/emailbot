@@ -19,8 +19,10 @@ defmodule BraidMail.Gmail do
       }
   end
 
-  # Generate a state token to be used to securely pass the user id through the
-  # oauth flow without tampering.
+  @doc """
+  Generate a state token to be used to securely pass the user id through the
+  oauth flow without tampering.
+  """
   def state_token(user_id) do
     nonce = Base.encode64(:crypto.strong_rand_bytes(10), padding: false)
     secret = Application.fetch_env!(:braidmail, :gmail_hmac_secret)
