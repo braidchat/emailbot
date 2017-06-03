@@ -7,4 +7,5 @@ config :braidmail,
   braid_api_server: "http://localhost:10003",
   gmail_id: "",
   gmail_secret: "",
-  gmail_redirect_uri: ""
+  gmail_redirect_uri: "http://localhost:4042/gmail/oauth2",
+  gmail_hmac_secret: <<77, 202, 82, 152, 63, 34, 64, 154, 108, 194>>
