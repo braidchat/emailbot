@@ -37,4 +37,25 @@ defmodule BraidMail.Braid do
       "mentioned-user-ids": [],
       "mentioned-tag-ids": []}
   end
+
+  @doc """
+  Register to get all updates for a given thread
+  """
+  def watch_thread(thread_id) do
+    braid_api = Application.fetch_env!(:braidmail, :braid_api_server)
+    user = Application.fetch_env!(:braidmail, :braid_id)
+    pass = Application.fetch_env!(:braidmail, :braid_token)
+    auth = Base.encode64(user <> ":" <> pass)
+    route = braid_api <> "/bots/subscribe/" <> strip_prefix(thread_id)
+    headers = [{"Authorization", "Basic #{auth}"}]
+    case HTTPoison.put route, <<>>, headers do
+      {:ok, %HTTPoison.Response{:status_code: 201}} -> IO.puts "Subscribed"
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+        IO.puts "Unexpected response subscribing: #{status}: #{body}"
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        IO.puts "Something went wrong subscribing: #{inspect reason}"
+    end
+  end
+
+  defp strip_prefix("urn:uuid:" <> uuid), do; uuid
 end
