@@ -1,6 +1,6 @@
-defmodule BraidMail.Routes do
+defmodule BraidMail.Routes.Gmail do
   @moduledoc """
-  Routes for the email bot
+  Routes for Gmail webhook/Oauths
   """
   alias Plug.Conn
 
@@ -9,8 +9,9 @@ defmodule BraidMail.Routes do
   plug :match
   plug :dispatch
 
-  forward "/gmail", to: BraidMail.Routes.Gmail
-  forward "/braid", to: BraidMail.Routes.Braid
+  get "/oauth2" do
+    conn |> Conn.send_resp(200, "ok")
+  end
 
   match _ do
     conn |> Conn.send_resp(404, "Dunno about that?")
