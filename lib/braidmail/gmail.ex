@@ -19,6 +19,8 @@ defmodule BraidMail.Gmail do
       }
   end
 
+  # TODO: Use token + session store instead of hmacing
+
   @doc """
   Generate a state token to be used to securely pass the user id through the
   oauth flow without tampering.
