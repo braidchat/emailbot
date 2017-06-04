@@ -23,15 +23,26 @@ defmodule BraidMail.Messaging do
   I can help you manage your gmail inbox from braid
   """
 
+  @gmail_signup_msg """
+  Hi ~s! Looks like you haven't connected your gmail account yet.
+  Send me a private message and we can get that set up!
+  """
+
   defp handle_mention(%{"user-id": user_id} = msg) do
-    if Repo.get_by(User, braid_id: user_id) do
-      msg
-        |> Braid.make_response("Hi again! " <> uuid2mention(user_id))
-        |> add_mentioned(user_id)
-        |> Braid.send_message
-    else
-      Repo.insert(%User{braid_id: user_id})
-      msg |> Braid.make_response(@usage_msg) |> Braid.send_message
+    case Repo.get_by(User, braid_id: user_id) do
+      %User{braid_id: user_id, gmail_token: tok} when tok != nil ->
+        msg
+          |> Braid.make_response("Hi again! " <> uuid2mention(user_id))
+          |> add_mentioned(user_id)
+          |> Braid.send_message
+      %User{braid_id: user_id} ->
+        msg
+          |> Braid.make_response(
+              :io_lib.format(@gmail_signup_msg, [uuid2mention(user_id)]))
+          |> add_mentioned(user_id)
+      _ ->
+        Repo.insert(%User{braid_id: user_id})
+        msg |> Braid.make_response(@usage_msg) |> Braid.send_message
     end
   end
 
