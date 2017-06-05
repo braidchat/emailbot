@@ -38,8 +38,12 @@ defmodule BraidMail.Messaging do
       %User{braid_id: user_id} ->
         msg
           |> Braid.make_response(
-              :io_lib.format(@gmail_signup_msg, [uuid2mention(user_id)]))
+              @gmail_signup_msg
+                |> :io_lib.format([uuid2mention(user_id)])
+                |> to_string
+              )
           |> add_mentioned(user_id)
+          |> Braid.send_message
       _ ->
         Repo.insert(%User{braid_id: user_id})
         msg |> Braid.make_response(@usage_msg) |> Braid.send_message
