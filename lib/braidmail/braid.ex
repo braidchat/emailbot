@@ -49,7 +49,7 @@ defmodule BraidMail.Braid do
     route = braid_api <> "/bots/subscribe/" <> strip_prefix(thread_id)
     headers = [{"Authorization", "Basic #{auth}"}]
     case HTTPoison.put route, <<>>, headers do
-      {:ok, %HTTPoison.Response{:status_code: 201}} -> IO.puts "Subscribed"
+      {:ok, %HTTPoison.Response{status_code: 201}} -> IO.puts "Subscribed"
       {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
         IO.puts "Unexpected response subscribing: #{status}: #{body}"
       {:error, %HTTPoison.Error{reason: reason}} ->
@@ -57,5 +57,5 @@ defmodule BraidMail.Braid do
     end
   end
 
-  defp strip_prefix("urn:uuid:" <> uuid), do; uuid
+  defp strip_prefix("urn:uuid:" <> uuid), do: uuid
 end
