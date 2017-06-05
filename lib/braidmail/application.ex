@@ -14,6 +14,7 @@ defmodule BraidMail.Application do
       Plug.Adapters.Cowboy.child_spec(:http, BraidMail.Routes, [],
                                       port: server_port),
       supervisor(BraidMail.Repo, []),
+      worker(BraidMail.Session, [])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
