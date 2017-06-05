@@ -26,3 +26,5 @@ config/prod.exs
 Mnesia.nonode@nohost/
 
 tmp/
+
+Session.vim
