@@ -4,15 +4,18 @@ defmodule BraidMail.Messaging do
   """
 
   alias BraidMail.Braid
+  alias BraidMail.Gmail
   alias BraidMail.Repo
-  alias BraidMail.Schemas.User
   alias BraidMail.Schemas.Thread
+  alias BraidMail.Schemas.User
 
   def handle_message(%{content: body, "thread-id": thread_id} = msg) do
     bot_name = Application.fetch_env!(:braidmail, :bot_name)
     prefix = "/" <> bot_name <> " "
     cond do
-      String.starts_with?(body, prefix) -> handle_mention(msg)
+      String.starts_with?(body, prefix) ->
+        %{msg | content: String.replace_prefix(body, prefix, "")}
+          |> handle_mention()
       Repo.get_by(Thread, braid_id: thread_id) -> handle_email_msg(msg)
       true -> IO.puts "Got message #{body}"
     end
@@ -25,10 +28,27 @@ defmodule BraidMail.Messaging do
 
   @gmail_signup_msg """
   Hi ~s! Looks like you haven't connected your gmail account yet.
-  Send me a private message and we can get that set up!
+  Say `/~s connect` and I'll send you a link to get started.
   """
 
+  @connect_link_msg """
+  Click this link to authorize me to connect to your mail account.
+  Make sure this message stays private! Don't mention anyone or add any tags to this thread!
+  ~s
+  """
+
+  defp handle_mention(%{"user-id": user_id, content: "connect"}) do
+    Braid.send_message(%{id: UUID.uuid4(:urn),
+                         "thread-id": UUID.uuid4(:urn),
+                         content: @connect_link_msg
+                                  |> :io_lib.format([Gmail.oauth_uri(user_id)])
+                                  |> to_string,
+                         "mentioned-user-ids": [user_id],
+                         "mentioned-tag-ids": []})
+  end
+
   defp handle_mention(%{"user-id": user_id} = msg) do
+    bot_name = Application.fetch_env!(:braidmail, :bot_name)
     case Repo.get_by(User, braid_id: user_id) do
       %User{braid_id: user_id, gmail_token: tok} when tok != nil ->
         msg
@@ -39,7 +59,7 @@ defmodule BraidMail.Messaging do
         msg
           |> Braid.make_response(
               @gmail_signup_msg
-                |> :io_lib.format([uuid2mention(user_id)])
+                |> :io_lib.format([uuid2mention(user_id), bot_name])
                 |> to_string
               )
           |> add_mentioned(user_id)
