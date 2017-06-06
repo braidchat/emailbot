@@ -25,8 +25,8 @@ defmodule BraidMail.Routes.Gmail do
         if user_id != nil do
           spawn fn -> Gmail.exchange_code(user_id, code) end
           conn
-            |> Conn.send_resp(302, "")
             |> Conn.put_resp_header("location", braid_uri)
+            |> Conn.send_resp(302, "")
         else
           conn |> Conn.send_resp(400, "Bad state token")
         end
