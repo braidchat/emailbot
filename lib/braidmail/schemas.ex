@@ -20,5 +20,6 @@ defmodule BraidMail.Schemas.User do
   schema "users" do
     field :braid_id
     field :gmail_token
+    field :gmail_refresh_token
   end
 end
