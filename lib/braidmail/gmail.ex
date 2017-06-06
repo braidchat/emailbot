@@ -46,7 +46,7 @@ defmodule BraidMail.Gmail do
       redirect_uri: Application.fetch_env!(:braidmail, :gmail_redirect_uri),
       grant_type: "authorization_code"
     ]
-    case HTTPoison.post route, body, [] do
+    case HTTPoison.post route, {:form, body}, [] do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         {:ok, creds} = Poison.Parser.parse(body)
         IO.puts "Got token #{creds}"
