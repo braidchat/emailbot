@@ -118,6 +118,12 @@ defmodule BraidMail.Messaging do
     Gmail.load_inbox(user_id, cb)
   end
 
+  defp handle_mention(%{content: "compose"} = msg) do
+    msg
+    |> Braid.make_response("Sorry, still a work in progress")
+    |> Braid.send_message
+  end
+
   defp handle_mention(%{"user-id": user_id} = msg) do
     # TODO: send some sort of status info to already connected user
     msg
