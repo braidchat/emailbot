@@ -30,7 +30,6 @@ defmodule BraidMail.Messaging do
   Cool, you're connected! I know the following commands:
   `inbox` - I'll tell you the subject & senders of your email inbox
   `compose` - I'll start a new thread you can use to compose an email
-  `read` - ???
   """
 
   @doc """
