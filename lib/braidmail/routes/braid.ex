@@ -17,5 +17,10 @@ defmodule BraidMail.Routes.Braid do
     |> Conn.put_resp_content_type("text/plain")
     |> Conn.send_resp(200, "message received")
   end
+
+  match _ do
+    conn |> Conn.send_resp(404, "Dunno about that?")
+  end
+
 end
 

@@ -32,4 +32,9 @@ defmodule BraidMail.Routes.Gmail do
         end
     end
   end
+
+  match _ do
+    conn |> Conn.send_resp(404, "Dunno about that?")
+  end
+
 end
