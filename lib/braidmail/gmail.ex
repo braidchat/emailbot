@@ -16,7 +16,7 @@ defmodule BraidMail.Gmail do
         "redirect_uri" => Application.fetch_env!(:braidmail,
                                                  :gmail_redirect_uri),
         "scope" => "https://www.googleapis.com/auth/gmail.modify",
-        "state=" => token,
+        "state" => token,
         "access_type" => "offline",
         "approval_prompt" => "force",
       }
