@@ -55,7 +55,7 @@ defmodule BraidMail.Messaging do
     bot_name = Application.fetch_env!(:braidmail, :bot_name)
     prefix = "/" <> bot_name <> " "
     case Repo.get_by(User, braid_id: user_id) do
-      %User{braid_id: user_id, gmail_token: tok} when tok != nil ->
+      %User{gmail_token: tok} when tok != nil ->
         cond do
           String.starts_with?(body, prefix) ->
             msg
@@ -64,7 +64,7 @@ defmodule BraidMail.Messaging do
           Repo.get_by(Thread, braid_id: thread_id) -> handle_email_msg(msg)
           true -> IO.puts "Got message #{body}"
         end
-      %User{braid_id: user_id} ->
+      %User{} ->
         msg
         |> remove_msg_prefix(prefix)
         |> send_initial_msg()
@@ -99,10 +99,23 @@ defmodule BraidMail.Messaging do
   end
 
   # Handling mentions from already connected users
-  defp handle_mention(%{"user-id": user_id, content: "help"} = msg) do
+  defp handle_mention(%{content: "help"} = msg) do
     msg
     |> Braid.make_response(@connected_help_msg)
     |> Braid.send_message
+  end
+
+  defp handle_mention(%{"user-id": user_id, content: "inbox"}) do
+    cb = fn info ->
+      # TODO: format & display thread info
+      %{id: UUID.uuid4(:urn),
+        "thread-id": UUID.uuid4(:urn),
+        content: inspect(info),
+        "mentioned-user-ids": [user_id],
+        "mentioned-tag-ids": []}
+      |> Braid.send_message()
+    end
+    Gmail.load_inbox(user_id, cb)
   end
 
   defp handle_mention(%{"user-id": user_id} = msg) do
