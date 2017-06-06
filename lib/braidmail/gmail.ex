@@ -29,4 +29,32 @@ defmodule BraidMail.Gmail do
     BraidMail.Session.pop(state)
   end
 
+  @doc """
+  Perform OAuth code exchange
+        {:type "gmail"
+                     :access-token access_token
+                     :id-token id_token
+                     :refresh-token refresh_token
+                     :expires-in expires_in}
+  """
+  def exchange_code(user_id, code) do
+    route = "https://www.googleapis.com/oauth2/v3/token"
+    body = [
+      code: code,
+      client_id: Application.fetch_env!(:braidmail, :gmail_id),
+      client_secret: Application.fetch_env!(:braidmail, :gmail_secret),
+      redirect_uri: Application.fetch_env!(:braidmail, :gmail_redirect_uri),
+      grant_type: "authorization_code"
+    ]
+    case HTTPoison.post route, body, [] do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        {:ok, creds} = Poison.Parser.parse(body)
+        IO.puts "Got token #{creds}"
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+        IO.puts "Unexpected response #{status}: #{body}"
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        IO.puts "Something went wrong sending message: #{inspect reason}"
+    end
+  end
+
 end
