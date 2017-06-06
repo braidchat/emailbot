@@ -37,6 +37,11 @@ defmodule BraidMail.Messaging do
   ~s
   """
 
+  @connect_success_msg """
+  Your gmail account is connected!
+  Invoke me with `/~s help` for a list of things you can do now :)
+  """
+
   defp handle_mention(%{"user-id": user_id, content: "connect"}) do
     Braid.send_message(%{id: UUID.uuid4(:urn),
                          "thread-id": UUID.uuid4(:urn),
@@ -68,6 +73,17 @@ defmodule BraidMail.Messaging do
         Repo.insert(%User{braid_id: user_id})
         msg |> Braid.make_response(@usage_msg) |> Braid.send_message
     end
+  end
+
+  def send_connected_msg(user_id) do
+    bot_name = Application.fetch_env!(:braidmail, :bot_name)
+    Braid.send_message(%{id: UUID.uuid4(:urn),
+                         "thread-id": UUID.uuid4(:urn),
+                         content: @connect_success_msg
+                                  |> :io_lib.format([bot_name])
+                                  |> to_string,
+                         "mentioned-user-ids": [user_id],
+                         "mentioned-tag-ids": []})
   end
 
   defp handle_email_msg(%{content: _body, "thread-id": _thread_id} = _msg) do

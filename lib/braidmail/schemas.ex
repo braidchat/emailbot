@@ -16,10 +16,16 @@ defmodule BraidMail.Schemas.User do
   DB schema for relating braid users & gmail api tokens
   """
   use Ecto.Schema
+  import Ecto.Changeset
 
   schema "users" do
     field :braid_id
     field :gmail_token
     field :gmail_refresh_token
+  end
+
+  def changeset(user, params) do
+    user
+    |> cast(params, [:braid_id, :gmail_token, :gmail_refresh_token])
   end
 end
