@@ -39,6 +39,8 @@ The "Authorized redirect URIs" should include whatever address the bot is access
 
 Put the URI you set as the authorized redirect URI in the config as `:gmail_redirect_uri`.
 
+You also need to enable the gmail API for the project, which you should be able to do from [the API console](https://console.developers.google.com/apis/api/gmail.googleapis.com/overview).
+
 ## Installation
 
 <!-- TODO -->
