@@ -22,7 +22,10 @@ defmodule BraidMail.Plugs.VerifyBraidSignature do
     else
       {:more, _, conn} -> {:error, :too_large, conn}
       {:error, :timeout} -> raise Plug.TimeoutError
-      _ -> Conn.send_resp(conn, 403, "Invalid signature for message")
+      _ ->
+        conn
+        |> Conn.send_resp(403, "Invalid signature for message")
+        |> Conn.halt()
     end
   end
 
