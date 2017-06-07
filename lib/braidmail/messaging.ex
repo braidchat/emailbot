@@ -112,12 +112,13 @@ defmodule BraidMail.Messaging do
   """
 
   defp handle_mention(%{"user-id": user_id, content: "inbox"}) do
-    cb = fn thread_id, %{id: id, from: from, subject: subject} ->
+    cb = fn thread_id, %{id: id, from: frm, subject: sub, is_unread: unread} ->
       %{id: UUID.uuid4(:urn),
         "thread-id": thread_id,
         content: @show_thread_msg
-                 |> :io_lib.format([id, from, subject])
-                 |> to_string,
+                 |> :io_lib.format([id, frm, sub])
+                 |> to_string
+                 |> maybe_bold(unread),
         "mentioned-user-ids": [user_id],
         "mentioned-tag-ids": []}
       |> Braid.send_message()
@@ -152,5 +153,13 @@ defmodule BraidMail.Messaging do
 
   defp remove_msg_prefix(%{content: content} = msg, prefix) do
     %{msg | content: String.replace_prefix(content, prefix, "")}
+  end
+
+  defp maybe_bold(content, should_bold) do
+    if should_bold do
+      "*" <> content <> "*"
+    else
+      content
+    end
   end
 end

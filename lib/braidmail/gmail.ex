@@ -36,7 +36,10 @@ defmodule BraidMail.Gmail do
   Perform OAuth code exchange and save the token & refresh token in the database
   """
   def exchange_code(user_id, code) do
-    send_auth_req([code: code, grant_type: "authorization_code"],
+    send_auth_req([code: code,
+                   grant_type: "authorization_code",
+                   redirect_uri: Application.fetch_env!(:braidmail,
+                                                        :gmail_redirect_uri)],
                   fn %{"access_token" => tok, "refresh_token" => refresh} ->
                     user = Repo.get_by(User, braid_id: user_id)
                     user
@@ -101,14 +104,20 @@ defmodule BraidMail.Gmail do
       params = [{"format", "METADATA"},
                 {"metadataHeaders", "Subject"},
                 {"metadataHeaders", "From"},
-                {"fields", "id,messages/payload/headers"}
+                {"fields", "id,messages(payload/headers,labelIds)"}
               ]
         api_request(path, params, user, fn thread ->
           with %{"id" => id, "messages" => [msg | _]} <- thread,
+               %{"labelIds" => labels} <- msg,
                %{"payload" => %{"headers" => headers}} <- msg,
-               %{"value" => subject} <- find_header.(headers, "Subject"),
-               %{"value" => from} <- find_header.(headers, "From") do
-            done.(braid_thread_id, %{id: id, from: from, subject: subject})
+               %{"value" => from} <- find_header.(headers, "From"),
+               %{"value" => subject} <- find_header.(headers, "Subject") do
+            done.(braid_thread_id,
+                  %{id: id,
+                    from: from,
+                    subject: subject,
+                    is_unread: Enum.find(labels, &(&1 == "UNREAD")) != nil
+                  })
           end
         end)
     end
