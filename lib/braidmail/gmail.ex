@@ -93,19 +93,20 @@ defmodule BraidMail.Gmail do
     load_thread_details = fn thread_id ->
       path = "/threads/" <> thread_id
       params = [{"format", "METADATA"},
-                {"metadataHeaders", "From,Subject"},
-                #{"fields", "id,messages/payload/headers"}
+                {"metadataHeaders", "Subject"},
+                {"metadataHeaders", "From"},
+                {"fields", "id,messages/payload/headers"}
               ]
         api_request(path, params, user, fn thread ->
           done.(braid_thread_id, thread)
         end)
     end
 
-    path = "/threads?"
+    path = "/threads"
     params = [{"labelIds", "INBOX"},
               {"fields", "threads/id"}]
     api_request(path, params, user, fn %{"threads" => threads} ->
-      for %{"id" => thread} <- threads do
+      for %{"id" => thread_id} <- threads do
         spawn fn -> load_thread_details.(thread_id) end
       end
     end)
