@@ -45,6 +45,7 @@ defmodule BraidMail.Mixfile do
      {:ecto_mnesia, "~> 0.9.0"},
      {:ecto, "~> 2.1"},
      {:poison, "~> 3.0"},
+     {:html_entities, "~> 0.3"},
    ]
   end
 end
