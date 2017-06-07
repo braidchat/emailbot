@@ -105,11 +105,9 @@ defmodule BraidMail.Gmail do
     params = [{"labelIds", "INBOX"},
               {"fields", "threads/id"}]
     api_request(path, params, user, fn %{"threads" => threads} ->
-      threads
-      |> Enum.take(3)
-      |> Enum.each(fn %{"id" => thread_id} ->
+      for %{"id" => thread} <- threads do
         spawn fn -> load_thread_details.(thread_id) end
-      end)
+      end
     end)
   end
 
