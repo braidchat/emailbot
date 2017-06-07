@@ -90,6 +90,12 @@ defmodule BraidMail.Gmail do
     braid_thread_id = UUID.uuid4(:urn)
     user = Repo.get_by(User, braid_id: user_id)
 
+    find_header = fn headers, field ->
+      Enum.find headers, fn %{"name" => name} ->
+        name == field
+      end
+    end
+
     load_thread_details = fn thread_id ->
       path = "/threads/" <> thread_id
       params = [{"format", "METADATA"},
@@ -98,7 +104,12 @@ defmodule BraidMail.Gmail do
                 {"fields", "id,messages/payload/headers"}
               ]
         api_request(path, params, user, fn thread ->
-          done.(braid_thread_id, thread)
+          with %{"id" => id, "messages" => [msg | _]} <- thread,
+               %{"payload" => %{"headers" => headers}} <- msg,
+               %{"value" => subject} <- find_header.(headers, "Subject"),
+               %{"value" => from} <- find_header.(headers, "From") do
+            done.(braid_thread_id, %{id: id, from: from, subject: subject})
+          end
         end)
     end
 

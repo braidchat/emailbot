@@ -104,11 +104,20 @@ defmodule BraidMail.Messaging do
     |> Braid.send_message
   end
 
+  @show_thread_msg """
+  ID: ~s
+  From: ~s
+  Subject: ~s
+
+  """
+
   defp handle_mention(%{"user-id": user_id, content: "inbox"}) do
-    cb = fn thread_id, thread ->
+    cb = fn thread_id, %{id: id, from: from, subject: subject} ->
       %{id: UUID.uuid4(:urn),
         "thread-id": thread_id,
-        content: "#{inspect thread}",
+        content: @show_thread_msg
+                 |> :io_lib.format([id, from, subject])
+                 |> to_string,
         "mentioned-user-ids": [user_id],
         "mentioned-tag-ids": []}
       |> Braid.send_message()
