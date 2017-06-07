@@ -83,17 +83,41 @@ defmodule BraidMail.Gmail do
   end
 
   @doc """
-  Get the contents of the inbox for the given user
+  Get the contents of the inbox for the user with braid id `user_id`.
+  The callback `done` will be called for each thread thusly loaded.
   """
   def load_inbox(user_id, done) do
+    braid_thread_id = UUID.uuid4(:urn)
     user = Repo.get_by(User, braid_id: user_id)
-    inbox_request(user, done)
+
+    load_thread_details = fn thread_id ->
+      path = "/threads/" <> thread_id
+      params = [{"format", "METADATA"},
+                {"metadataHeaders", "From,Subject"},
+                #{"fields", "id,messages/payload/headers"}
+              ]
+        api_request(path, params, user, fn thread ->
+          done.(braid_thread_id, thread)
+        end)
+    end
+
+    path = "/threads?"
+    params = [{"labelIds", "INBOX"},
+              {"fields", "threads/id"}]
+    api_request(path, params, user, fn %{"threads" => threads} ->
+      threads
+      |> Enum.take(3)
+      |> Enum.each(fn %{"id" => thread_id} ->
+        spawn fn -> load_thread_details.(thread_id) end
+      end)
+    end)
   end
 
-  defp inbox_request(%User{gmail_token: tok} = user, done, retried \\ false) do
-    route = "https://www.googleapis.com/gmail/v1/users/me/threads"
+  defp api_request(endpoint, params, %User{gmail_token: tok} = user, done,
+                   retried \\ false) do
+    uri = "https://www.googleapis.com/gmail/v1/users/me" <> endpoint
     headers = [{"authorization", "Bearer " <> tok}]
-    case HTTPoison.get route, headers do
+    case HTTPoison.get uri, headers, params: params do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         case Poison.Parser.parse(body) do
           {:ok, threads} -> done.(threads)
@@ -105,7 +129,7 @@ defmodule BraidMail.Gmail do
         refresh_token(user_id, refresh_tok,
                       fn ->
                         user = Repo.get_by(User, braid_id: user_id)
-                        inbox_request(user, done, true)
+                        api_request(endpoint, params, user, done, true)
                       end)
       {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
         IO.puts "Unexpected response: #{status} #{body}"

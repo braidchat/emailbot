@@ -5,8 +5,6 @@ defmodule BraidMail.Routes.Gmail do
   alias Plug.Conn
 
   alias BraidMail.Gmail
-  alias BraidMail.Repo
-  alias BraidMail.Schemas.User
 
   use Plug.Router
 
