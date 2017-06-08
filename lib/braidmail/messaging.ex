@@ -31,7 +31,7 @@ defmodule BraidMail.Messaging do
   `inbox` - I'll tell you the subject & senders of your email inbox
   `inbox new` - Like `inbox`, but only the unread emails
   `archive <msg-id>` - Mark as read & archive the thread with the given id
-  `compose` - I'll start a new thread you can use to compose an email
+  `read <msg-id>` - I'll reply with the body of the email with the given id
   """
 
   @doc """
