@@ -137,22 +137,18 @@ defmodule BraidMail.Gmail do
   end
 
   def archive_message(user_id, msg_id, done) do
-    user = Repo.get_by(User, braid_id: user_id)
-    path = "/threads/#{msg_id}/modify"
-    body = Poison.encode!(%{removeLabelIds: ["INBOX", "UNREAD"]})
-    api_request(%{endpoint: path,
-                  body: body,
+    api_request(%{endpoint: "/threads/#{msg_id}/modify",
                   method: :post,
+                  body: Poison.encode!(%{removeLabelIds: ["INBOX", "UNREAD"]}),
                   headers: [{"content-type", "application/json"}]},
-                user,
+                Repo.get_by(User, braid_id: user_id),
                 fn _ -> done.() end)
   end
 
   def read_message(user_id, thread_id, done) do
-    path = "/threads/" <> thread_id
-    params = [{"fields", "messages/payload/parts"}]
     user = Repo.get_by(User, braid_id: user_id)
-    api_request(%{endpoint: path, params: params},
+    api_request(%{endpoint: "/threads/#{thread_id}",
+                  params: [{"fields", "messages/payload/parts"}]},
                 user,
                 fn %{"messages" => messages} ->
                   %{"payload" => %{"parts" => parts}} = List.last messages
@@ -161,9 +157,18 @@ defmodule BraidMail.Gmail do
                   |> Enum.find(parts, &(&1["mimeType"] == "text/plain"))
                   |> Map.get("body")
                   |> Map.get("data")
+                  |> String.replace("-", "+")
+                  |> String.replace("_", "/")
                   |> Base.decode64!
                   |> done.()
                 end)
+
+    api_request(%{endpoint: "/threads/#{thread_id}/modify",
+                  method: :post,
+                  body: Poison.encode!(%{removeLabelIds: ["UNREAD"]}),
+                  headers: [{"content-type", "application/json"}]},
+                user,
+                fn _ -> done.() end)
   end
 
   defp api_request(req, %User{gmail_token: tok} = user, done, retried \\ false)
