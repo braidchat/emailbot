@@ -29,6 +29,7 @@ defmodule BraidMail.Messaging do
   @connected_help_msg """
   Cool, you're connected! I know the following commands:
   `inbox` - I'll tell you the subject & senders of your email inbox
+  `archive <msg-id>` - Mark as read & archive the thread with the given id
   `compose` - I'll start a new thread you can use to compose an email
   """
 
@@ -126,7 +127,18 @@ defmodule BraidMail.Messaging do
     Gmail.load_inbox(user_id, cb)
   end
 
-  defp handle_mention(%{content: "compose"} = msg) do
+  defp handle_mention(%{"user-id": user_id, command: ["archive", msg_id]} = msg)
+  do
+    done = fn ->
+      msg
+      |> Braid.make_response("Archived #{msg_id}")
+      |> Braid.send_message
+    end
+    Gmail.archive_message(user_id, msg_id, done)
+  end
+
+
+  defp handle_mention(%{command: ["compose"]} = msg) do
     msg
     |> Braid.make_response("Sorry, still a work in progress")
     |> Braid.send_message
@@ -164,6 +176,5 @@ defmodule BraidMail.Messaging do
   defp maybe_bold(content, false) do
     content
   end
-
 
 end
