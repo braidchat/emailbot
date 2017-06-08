@@ -100,6 +100,8 @@ defmodule BraidMail.Gmail do
     end
 
     load_thread_details = fn thread_id ->
+      # Re-load user to get refreshed token
+      user = Repo.get_by(User, braid_id: user_id)
       path = "/threads/" <> thread_id
       params = [{"format", "METADATA"},
                 {"metadataHeaders", "Subject"},
