@@ -106,7 +106,7 @@ defmodule BraidMail.Gmail do
                 {"metadataHeaders", "From"},
                 {"fields", "id,messages(payload/headers,labelIds)"}
               ]
-        api_request(path, params, user, fn thread ->
+        api_request(%{endpoint: path, params: params}, user, fn thread ->
           with %{"id" => id, "messages" => [msg | _]} <- thread,
                %{"labelIds" => labels} <- msg,
                %{"payload" => %{"headers" => headers}} <- msg,
@@ -125,18 +125,24 @@ defmodule BraidMail.Gmail do
     path = "/threads"
     params = [{"labelIds", "INBOX"},
               {"fields", "threads/id"}]
-    api_request(path, params, user, fn %{"threads" => threads} ->
-      for %{"id" => thread_id} <- threads do
-        spawn fn -> load_thread_details.(thread_id) end
-      end
-    end)
+    api_request(%{endpoint: path, params: params}, user,
+                fn %{"threads" => threads} ->
+                  for %{"id" => thread_id} <- threads do
+                    spawn fn -> load_thread_details.(thread_id) end
+                  end
+                end)
   end
 
-  defp api_request(endpoint, params, %User{gmail_token: tok} = user, done,
-                   retried \\ false) do
+  defp api_request(req, %User{gmail_token: tok} = user, done, retried \\ false)
+  do
+    endpoint = req[:endpoint]
+    method = req[:method] || :get
+    params = req[:params] || []
+    headers = req[:headers] || []
+    body = req[:body] || <<>>
     uri = "https://www.googleapis.com/gmail/v1/users/me" <> endpoint
-    headers = [{"authorization", "Bearer " <> tok}]
-    case HTTPoison.get uri, headers, params: params do
+    headers = [{"authorization", "Bearer " <> tok}] ++ headers
+    case HTTPoison.request method, uri, body, headers, params: params do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         case Poison.Parser.parse(body) do
           {:ok, threads} -> done.(threads)
@@ -148,7 +154,7 @@ defmodule BraidMail.Gmail do
         refresh_token(user_id, refresh_tok,
                       fn ->
                         user = Repo.get_by(User, braid_id: user_id)
-                        api_request(endpoint, params, user, done, true)
+                        api_request(req, user, done, true)
                       end)
       {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
         IO.puts "Unexpected response: #{status} #{body}"
