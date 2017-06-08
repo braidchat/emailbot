@@ -23,7 +23,7 @@ See `config/test.exs` for a reference of the config info that should be set.
 
 Add the bot to your braid group.
 
-The message webhook URL should be `https://<bot address>/message`
+The message webhook URL should be `https://<bot address>/braid/message`
 
 Leave "Enable All Public Messages" unchecked and don't set the "group event webhook URL".
 
@@ -34,12 +34,11 @@ Put the "Bot ID" in the config under the key `:braid_id` and the "Bot Token" und
 Go to the [developer console](https://console.developers.google.com) and create a new OAuth-flow app.
 Put the "client id" value in the config under the key `:gmail_id` and the "client secret" under the key `:gmail_secret`.
 
-The "Authorized JavaScript origins" should include `https://braid.chat` (or whatever the Braid server you will be using the bot with).
 The "Authorized redirect URIs" should include whatever address the bot is accessible at, with the path `"/gmail/oauth2"`.
 
 Put the URI you set as the authorized redirect URI in the config as `:gmail_redirect_uri`.
 
-You also need to enable the gmail API for the project, which you should be able to do from [the API console](https://console.developers.google.com/apis/api/gmail.googleapis.com/overview).
+You also need to enable the gmail API for the project, which you should be able to do from the developer console by going to dashboard, then clicking "Enable API", then selecting Gmail.
 
 ## Installation
 
