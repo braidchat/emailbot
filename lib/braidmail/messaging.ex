@@ -158,11 +158,12 @@ defmodule BraidMail.Messaging do
     Map.put(msg, :command, command)
   end
 
-  defp maybe_bold(content, should_bold) do
-    if should_bold do
+  defp maybe_bold(content, true) do
       "*" <> content <> "*"
-    else
-      content
-    end
   end
+  defp maybe_bold(content, false) do
+    content
+  end
+
+
 end
