@@ -148,6 +148,24 @@ defmodule BraidMail.Gmail do
                 fn _ -> done.() end)
   end
 
+  def read_message(user_id, thread_id, done) do
+    path = "/threads/" <> thread_id
+    params = [{"fields", "messages/payload/parts"}]
+    user = Repo.get_by(User, braid_id: user_id)
+    api_request(%{endpoint: path, params: params},
+                user,
+                fn %{"messages" => messages} ->
+                  %{"payload" => %{"parts" => parts}} = List.last messages
+
+                  parts
+                  |> Enum.find(parts, &(&1["mimeType"] == "text/plain"))
+                  |> Map.get("body")
+                  |> Map.get("data")
+                  |> Base.decode64!
+                  |> done.()
+                end)
+  end
+
   defp api_request(req, %User{gmail_token: tok} = user, done, retried \\ false)
   do
     endpoint = req[:endpoint]

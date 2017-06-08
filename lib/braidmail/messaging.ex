@@ -128,6 +128,16 @@ defmodule BraidMail.Messaging do
     Gmail.load_inbox(user_id, args == ["new"], cb)
   end
 
+  defp handle_mention(%{"user-id": user_id, command: ["read", msg_id]} = msg)
+  do
+    done = fn content ->
+      msg
+      |> Braid.make_response(content)
+      |> Braid.send_message
+    end
+    Gmail.read_message(user_id, msg_id, done)
+  end
+
   defp handle_mention(%{"user-id": user_id, command: ["archive", msg_id]} = msg)
   do
     done = fn ->
@@ -137,6 +147,7 @@ defmodule BraidMail.Messaging do
     end
     Gmail.archive_message(user_id, msg_id, done)
   end
+
 
 
   defp handle_mention(%{command: ["compose"]} = msg) do
