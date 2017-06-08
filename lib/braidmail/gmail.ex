@@ -89,7 +89,7 @@ defmodule BraidMail.Gmail do
   Get the contents of the inbox for the user with braid id `user_id`.
   The callback `done` will be called for each thread thusly loaded.
   """
-  def load_inbox(user_id, done) do
+  def load_inbox(user_id, just_unread, done) do
     braid_thread_id = UUID.uuid4(:urn)
     user = Repo.get_by(User, braid_id: user_id)
 
@@ -126,7 +126,8 @@ defmodule BraidMail.Gmail do
 
     path = "/threads"
     params = [{"labelIds", "INBOX"},
-              {"fields", "threads/id"}]
+              {"fields", "threads/id"}] ++
+             if just_unread, do: [{"labelIds", "UNREAD"}], else: []
     api_request(%{endpoint: path, params: params}, user,
                 fn %{"threads" => threads} ->
                   for %{"id" => thread_id} <- threads do

@@ -29,6 +29,7 @@ defmodule BraidMail.Messaging do
   @connected_help_msg """
   Cool, you're connected! I know the following commands:
   `inbox` - I'll tell you the subject & senders of your email inbox
+  `inbox new` - Like `inbox`, but only the unread emails
   `archive <msg-id>` - Mark as read & archive the thread with the given id
   `compose` - I'll start a new thread you can use to compose an email
   """
@@ -112,7 +113,7 @@ defmodule BraidMail.Messaging do
 
   """
 
-  defp handle_mention(%{"user-id": user_id, command: ["inbox"]}) do
+  defp handle_mention(%{"user-id": user_id, command: ["inbox" | args]}) do
     cb = fn thread_id, %{id: id, from: frm, subject: sub, is_unread: unread} ->
       %{id: UUID.uuid4(:urn),
         "thread-id": thread_id,
@@ -124,7 +125,7 @@ defmodule BraidMail.Messaging do
         "mentioned-tag-ids": []}
       |> Braid.send_message()
     end
-    Gmail.load_inbox(user_id, cb)
+    Gmail.load_inbox(user_id, args == ["new"], cb)
   end
 
   defp handle_mention(%{"user-id": user_id, command: ["archive", msg_id]} = msg)
