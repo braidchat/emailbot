@@ -139,7 +139,9 @@ defmodule BraidMail.Gmail do
     user = Repo.get_by(User, braid_id: user_id)
     path = "/threads/#{msg_id}/modify"
     body = Poison.encode!(%{removeLabelIds: ["INBOX", "UNREAD"]})
-    api_request(%{endpoint: path, body: body, method: :post,
+    api_request(%{endpoint: path,
+                  body: body,
+                  method: :post,
                   headers: [{"content-type", "application/json"}]},
                 user,
                 fn _ -> done.() end)
