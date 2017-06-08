@@ -58,25 +58,25 @@ defmodule BraidMail.Messaging do
         cond do
           String.starts_with?(body, prefix) ->
             msg
-            |> remove_msg_prefix(prefix)
+            |> extract_commands(prefix)
             |> handle_mention()
           Repo.get_by(Thread, braid_id: thread_id) -> handle_email_msg(msg)
           true -> IO.puts "Got message #{body}"
         end
       %User{} ->
         msg
-        |> remove_msg_prefix(prefix)
+        |> extract_commands(prefix)
         |> send_initial_msg()
       _ ->
         Repo.insert(%User{braid_id: user_id})
         msg
-        |> remove_msg_prefix(prefix)
+        |> extract_commands(prefix)
         |> send_initial_msg()
     end
   end
 
   # Handle mentions from a user who is not yet connected to gmail
-  defp send_initial_msg(%{"user-id": user_id, content: "connect"}) do
+  defp send_initial_msg(%{"user-id": user_id, command: ["connect"]}) do
     Braid.send_message(%{id: UUID.uuid4(:urn),
                          "thread-id": UUID.uuid4(:urn),
                          content: @connect_link_msg
@@ -98,7 +98,7 @@ defmodule BraidMail.Messaging do
   end
 
   # Handling mentions from already connected users
-  defp handle_mention(%{content: "help"} = msg) do
+  defp handle_mention(%{command: ["help"]} = msg) do
     msg
     |> Braid.make_response(@connected_help_msg)
     |> Braid.send_message
@@ -111,7 +111,7 @@ defmodule BraidMail.Messaging do
 
   """
 
-  defp handle_mention(%{"user-id": user_id, content: "inbox"}) do
+  defp handle_mention(%{"user-id": user_id, command: ["inbox"]}) do
     cb = fn thread_id, %{id: id, from: frm, subject: sub, is_unread: unread} ->
       %{id: UUID.uuid4(:urn),
         "thread-id": thread_id,
@@ -151,8 +151,11 @@ defmodule BraidMail.Messaging do
     %{msg | "mentioned-user-ids": [user_id | mentions]}
   end
 
-  defp remove_msg_prefix(%{content: content} = msg, prefix) do
-    %{msg | content: String.replace_prefix(content, prefix, "")}
+  defp extract_commands(%{content: content} = msg, prefix) do
+    command = content
+              |> String.replace_prefix(prefix, "")
+              |> String.split(~r(\s+))
+    Map.put(msg, :command, command)
   end
 
   defp maybe_bold(content, should_bold) do
