@@ -113,17 +113,24 @@ defmodule BraidMail.Messaging do
 
   """
 
-  defp handle_mention(%{"user-id": user_id, command: ["inbox" | args]}) do
-    cb = fn thread_id, %{id: id, from: frm, subject: sub, is_unread: unread} ->
-      %{id: UUID.uuid4(:urn),
-        "thread-id": thread_id,
-        content: @show_thread_msg
-                 |> :io_lib.format([id, frm, sub])
-                 |> to_string
-                 |> maybe_bold(unread),
-        "mentioned-user-ids": [user_id],
-        "mentioned-tag-ids": []}
-      |> Braid.send_message()
+  defp handle_mention(%{"user-id": user_id, command: ["inbox" | args]} = msg) do
+    cb = fn thread_id, message ->
+      with %{id: id, from: frm, subject: sub, is_unread: unread} <- message do
+        %{id: UUID.uuid4(:urn),
+          "thread-id": thread_id,
+          content: @show_thread_msg
+                   |> :io_lib.format([id, frm, sub])
+                   |> to_string
+                   |> maybe_bold(unread),
+          "mentioned-user-ids": [user_id],
+          "mentioned-tag-ids": []}
+        |> Braid.send_message()
+      else
+        _ ->
+          msg
+          |> Braid.make_response("No new messages")
+          |> Braid.send_message
+      end
     end
     Gmail.load_inbox(user_id, args == ["new"], cb)
   end

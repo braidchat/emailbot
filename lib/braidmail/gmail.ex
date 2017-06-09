@@ -124,14 +124,17 @@ defmodule BraidMail.Gmail do
         end)
     end
 
-    path = "/threads"
     params = [{"labelIds", "INBOX"},
               {"fields", "threads/id"}] ++
              if just_unread, do: [{"labelIds", "UNREAD"}], else: []
-    api_request(%{endpoint: path, params: params}, user,
-                fn %{"threads" => threads} ->
-                  for %{"id" => thread_id} <- threads do
-                    spawn fn -> load_thread_details.(thread_id) end
+    api_request(%{endpoint: "/threads", params: params}, user,
+                fn resp ->
+                  with %{"threads" => threads} <- resp do
+                    for %{"id" => thread_id} <- threads do
+                      spawn fn -> load_thread_details.(thread_id) end
+                    end
+                  else
+                    _ -> done.(braid_thread_id, nil)
                   end
                 end)
   end
