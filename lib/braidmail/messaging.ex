@@ -157,6 +157,7 @@ defmodule BraidMail.Messaging do
   end
 
   defp handle_mention(%{command: ["compose" | to_addresses]} = msg) do
+    # TODO:
     # Start a new thread
     # subscribe to new thread
     # append messages to saved body
@@ -168,6 +169,7 @@ defmodule BraidMail.Messaging do
   end
 
   defp handle_mention(%{command: ["reply", msg_id]} = msg) do
+    # TODO:
     # Start a new thread
     # subscribe to new thread
     # append messages to saved body
@@ -183,7 +185,6 @@ defmodule BraidMail.Messaging do
   """
 
   defp handle_mention(%{"user-id": user_id} = msg) do
-    # TODO:
     bot_name = Application.fetch_env!(:braidmail, :bot_name)
     msg
     |> Braid.make_response(@unknown_command_msg
