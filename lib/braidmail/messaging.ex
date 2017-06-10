@@ -9,29 +9,9 @@ defmodule BraidMail.Messaging do
   alias BraidMail.Schemas.Thread
   alias BraidMail.Schemas.User
 
-  # Various message strings that will be sent
-  @gmail_signup_msg """
-  Hi ~s! Looks like you haven't connected your gmail account yet.
-  Say `/~s connect` and I'll send you a link to get started.
-  """
-
-  @connect_link_msg """
-  Click this link to authorize me to connect to your mail account.
-  Make sure this message stays private! Don't mention anyone or add any tags to this thread!
-  ~s
-  """
-
   @connect_success_msg """
   Your gmail account is connected!
   Invoke me with `/~s help` for a list of things you can do now :)
-  """
-
-  @connected_help_msg """
-  Cool, you're connected! I know the following commands:
-  `inbox` - I'll tell you the subject & senders of your email inbox
-  `inbox new` - Like `inbox`, but only the unread emails
-  `archive <msg-id>` - Mark as read & archive the thread with the given id
-  `read <msg-id>` - I'll reply with the body of the email with the given id
   """
 
   @doc """
@@ -78,6 +58,12 @@ defmodule BraidMail.Messaging do
   end
 
   # Handle mentions from a user who is not yet connected to gmail
+  @connect_link_msg """
+  Click this link to authorize me to connect to your mail account.
+  Make sure this message stays private! Don't mention anyone or add any tags to this thread!
+  ~s
+  """
+
   defp send_initial_msg(%{"user-id": user_id, command: ["connect"]}) do
     Braid.send_message(%{id: UUID.uuid4(:urn),
                          "thread-id": UUID.uuid4(:urn),
@@ -87,6 +73,11 @@ defmodule BraidMail.Messaging do
                          "mentioned-user-ids": [user_id],
                          "mentioned-tag-ids": []})
   end
+
+  @gmail_signup_msg """
+  Hi ~s! Looks like you haven't connected your gmail account yet.
+  Say `/~s connect` and I'll send you a link to get started.
+  """
 
   defp send_initial_msg(%{"user-id": user_id} = msg) do
     bot_name = Application.fetch_env!(:braidmail, :bot_name)
@@ -100,6 +91,14 @@ defmodule BraidMail.Messaging do
   end
 
   # Handling mentions from already connected users
+  @connected_help_msg """
+  Cool, you're connected! I know the following commands:
+  `inbox` - I'll tell you the subject & senders of your email inbox
+  `inbox new` - Like `inbox`, but only the unread emails
+  `archive <msg-id>` - Mark as read & archive the thread with the given id
+  `read <msg-id>` - I'll reply with the body of the email with the given id
+  """
+
   defp handle_mention(%{command: ["help"]} = msg) do
     msg
     |> Braid.make_response(@connected_help_msg)
