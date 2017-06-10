@@ -97,6 +97,8 @@ defmodule BraidMail.Messaging do
   `inbox new` - Like `inbox`, but only the unread emails
   `archive <msg-id>` - Mark as read & archive the thread with the given id
   `read <msg-id>` - I'll reply with the body of the email with the given id
+  `compose <to-addresses>` - Start composing an email
+  `reply <msg-id>` - Start composing a reply to the thread with the given id
   """
 
   defp handle_mention(%{command: ["help"]} = msg) do
@@ -154,9 +156,23 @@ defmodule BraidMail.Messaging do
     Gmail.archive_message(user_id, msg_id, done)
   end
 
+  defp handle_mention(%{command: ["compose" | to_addresses]} = msg) do
+    # Start a new thread
+    # subscribe to new thread
+    # append messages to saved body
+    # commands: /emailbot save to save the current email as a draf
+    #           / emailbot send to send the current email
+    msg
+    |> Braid.make_response("Sorry, still a work in progress")
+    |> Braid.send_message
+  end
 
-
-  defp handle_mention(%{command: ["compose"]} = msg) do
+  defp handle_mention(%{command: ["reply", msg_id]} = msg) do
+    # Start a new thread
+    # subscribe to new thread
+    # append messages to saved body
+    # commands: /emailbot save to save the current email as a draf
+    #           / emailbot send to send the current email
     msg
     |> Braid.make_response("Sorry, still a work in progress")
     |> Braid.send_message
