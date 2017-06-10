@@ -163,11 +163,17 @@ defmodule BraidMail.Messaging do
     |> Braid.send_message
   end
 
+  @unknown_command_msg """
+  Sorry, I don't know what you mean; try `/~s help` the commands I know
+  """
+
   defp handle_mention(%{"user-id": user_id} = msg) do
-    # TODO: send some sort of status info to already connected user
+    # TODO:
+    bot_name = Application.fetch_env!(:braidmail, :bot_name)
     msg
-    |> Braid.make_response("Hi again! " <> uuid2mention(user_id))
-    |> add_mentioned(user_id)
+    |> Braid.make_response(@unknown_command_msg
+                           |> :io_lib.format([bot_name])
+                           |> to_string)
     |> Braid.send_message
   end
 
