@@ -42,7 +42,8 @@ defmodule BraidMail.Messaging do
             msg
             |> extract_commands(prefix)
             |> handle_mention()
-          Repo.get_by(Thread, braid_id: thread_id) -> handle_email_msg(msg)
+          thread = Repo.get_by(Thread, braid_id: thread_id, user_id: user_id) ->
+            handle_email_msg(thread, msg)
           true -> IO.puts "Got message #{body}"
         end
       %User{} ->
@@ -156,19 +157,31 @@ defmodule BraidMail.Messaging do
     Gmail.archive_message(user_id, msg_id, done)
   end
 
-  defp handle_mention(%{command: ["compose" | to_addresses]} = msg) do
-    # TODO:
+  defp handle_mention(%{"user-id": user_id, command: ["compose" | to_addrs]}) do
     # Start a new thread
     # subscribe to new thread
     # append messages to saved body
     # commands: /emailbot save to save the current email as a draf
     #           / emailbot send to send the current email
-    msg
-    |> Braid.make_response("Sorry, still a work in progress")
-    |> Braid.send_message
+    new_thread_id = UUID.uuid4(:urn)
+
+    Repo.insert(%Thread{braid_id: new_thread_id,
+                        status: "composing",
+                        content: "",
+                        user_id: user_id,
+                        to: Enum.join(to_addrs, ",")})
+
+    %{id: UUID.uuid4(:urn),
+      "thread-id": new_thread_id,
+      content: "Begin composing your message; /emailbot done when finished",
+      "mentioned-user-ids": [user_id],
+      "mentioned-tag-ids": []}
+    |> Braid.send_message()
+
+    Braid.watch_thread(new_thread_id)
   end
 
-  defp handle_mention(%{command: ["reply", msg_id]} = msg) do
+  defp handle_mention(%{command: ["reply", _msg_id]} = msg) do
     # TODO:
     # Start a new thread
     # subscribe to new thread
@@ -184,7 +197,7 @@ defmodule BraidMail.Messaging do
   Sorry, I don't know what you mean; try `/~s help` the commands I know
   """
 
-  defp handle_mention(%{"user-id": user_id} = msg) do
+  defp handle_mention(msg) do
     bot_name = Application.fetch_env!(:braidmail, :bot_name)
     msg
     |> Braid.make_response(@unknown_command_msg
@@ -193,8 +206,18 @@ defmodule BraidMail.Messaging do
     |> Braid.send_message
   end
 
-  defp handle_email_msg(%{content: _body, "thread-id": _thread_id} = _msg) do
+  defp handle_email_msg(%Thread{status: "composing"} = thread, %{content: body})
+  do
+    {:ok, _} = thread
+               |> Thread.append_changeset(body)
+               |> Repo.update
   end
+
+  defp handle_email_msg(thread, msg) do
+    IO.puts("Non-composing thread #{inspect thread} #{inspect msg}")
+  end
+
+  # Helper functions
 
   defp uuid2mention("urn:uuid:" <> uuid) do
     "@" <> uuid

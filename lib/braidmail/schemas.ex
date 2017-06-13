@@ -3,11 +3,25 @@ defmodule BraidMail.Schemas.Thread do
   DB schema for the threads that correspond to emails
   """
   use Ecto.Schema
+  import Ecto.Changeset
 
   schema "threads" do
     field :braid_id
     field :gmail_id
     field :status
+    field :content
+    field :user_id
+    field :to
+  end
+
+  def changeset(thread, params) do
+    thread
+    |> cast(params, [:content])
+  end
+
+  def append_changeset(%{content: content} = thread, more_content) do
+    thread
+    |> changeset(%{content: content <> "\n" <> more_content})
   end
 end
 
