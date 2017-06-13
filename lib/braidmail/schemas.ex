@@ -12,17 +12,23 @@ defmodule BraidMail.Schemas.Thread do
     field :content
     field :user_id
     field :to
+    field :subject
   end
 
   def changeset(thread, params) do
     thread
-    |> cast(params, [:content])
+    |> cast(params, ~w(content subject status)a)
   end
 
+  def append_changeset(%{content: <<>>} = thread, more_content) do
+    thread
+    |> changeset(%{content: more_content})
+  end
   def append_changeset(%{content: content} = thread, more_content) do
     thread
     |> changeset(%{content: content <> "\n" <> more_content})
   end
+
 end
 
 defmodule BraidMail.Schemas.User do

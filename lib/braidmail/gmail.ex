@@ -5,6 +5,7 @@ defmodule BraidMail.Gmail do
 
   alias BraidMail.Repo
   alias BraidMail.Schemas.User
+  alias BraidMail.Schemas.Thread
 
   @doc """
   Generate a URL to send to the given user which will ask them to authorize us
@@ -172,6 +173,30 @@ defmodule BraidMail.Gmail do
                   headers: [{"content-type", "application/json"}]},
                 user,
                 fn _ -> done.() end)
+  end
+
+  def save_draft(user_id,
+                 %Thread{to: to, subject: subj, content: content} = thread,
+                 done)
+  do
+    body = ["To: #{to}", "Subject: #{subj}", "\r\n#{content}"]
+           |> Enum.join("\r\n")
+           |> Base.encode64
+           |> String.replace("+", "-")
+           |> String.replace("/", "_")
+
+    api_request(%{endpoint: "/drafts",
+                  method: :post,
+                  body: Poison.encode!(%{message: %{raw: body}}),
+                  headers: [{"content-type", "application/json"}]},
+                Repo.get_by(User, braid_id: user_id),
+                fn %{"id" => msg_id} ->
+                  thread
+                  |> Thread.changeset(%{gmail_id: msg_id})
+                  |> Repo.update
+
+                  done.()
+                end)
   end
 
   defp api_request(req, %User{gmail_token: tok} = user, done, retried \\ false)

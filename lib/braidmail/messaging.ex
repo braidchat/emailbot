@@ -43,7 +43,7 @@ defmodule BraidMail.Messaging do
             |> extract_commands(prefix)
             |> handle_mention()
           thread = Repo.get_by(Thread, braid_id: thread_id, user_id: user_id) ->
-            handle_email_msg(thread, msg)
+            handle_email_msg(thread, extract_commands(msg, "/"))
           true -> IO.puts "Got message #{body}"
         end
       %User{} ->
@@ -91,7 +91,7 @@ defmodule BraidMail.Messaging do
     |> Braid.send_message
   end
 
-  # Handling mentions from already connected users
+  ## Handling mentions from already connected users
   @connected_help_msg """
   Cool, you're connected! I know the following commands:
   `inbox` - I'll tell you the subject & senders of your email inbox
@@ -157,12 +157,12 @@ defmodule BraidMail.Messaging do
     Gmail.archive_message(user_id, msg_id, done)
   end
 
+  @begin_compose_msg """
+  Type the body of your email in this thread, sending as many messages as you want.
+  Type `/subject <subject>` to set the subject of the email
+  When you're done, type `/save` to save a draft or `/send` to send the email
+  """
   defp handle_mention(%{"user-id": user_id, command: ["compose" | to_addrs]}) do
-    # Start a new thread
-    # subscribe to new thread
-    # append messages to saved body
-    # commands: /emailbot save to save the current email as a draf
-    #           / emailbot send to send the current email
     new_thread_id = UUID.uuid4(:urn)
 
     Repo.insert(%Thread{braid_id: new_thread_id,
@@ -173,7 +173,7 @@ defmodule BraidMail.Messaging do
 
     %{id: UUID.uuid4(:urn),
       "thread-id": new_thread_id,
-      content: "Begin composing your message; /emailbot done when finished",
+      content: @begin_compose_msg,
       "mentioned-user-ids": [user_id],
       "mentioned-tag-ids": []}
     |> Braid.send_message()
@@ -206,6 +206,30 @@ defmodule BraidMail.Messaging do
     |> Braid.send_message
   end
 
+  ## Messages to subscribed threads
+
+  defp handle_email_msg(thread, %{command: ["subject" | subject]} = msg) do
+    subj = Enum.join(subject, " ")
+
+    thread
+    |> Thread.changeset(%{subject: subj})
+    |> Repo.update
+
+    msg
+    |> Braid.make_response("Set subject to #{subj}")
+    |> Braid.send_message
+  end
+
+  defp handle_email_msg(%Thread{user_id: user_id} = thread,
+                        %{command: ["save"]} = msg)
+  do
+    Gmail.save_draft(user_id, thread, fn ->
+      msg
+      |> Braid.make_response("Draft saved")
+      |> Braid.send_message
+    end)
+  end
+
   defp handle_email_msg(%Thread{status: "composing"} = thread, %{content: body})
   do
     {:ok, _} = thread
@@ -217,7 +241,7 @@ defmodule BraidMail.Messaging do
     IO.puts("Non-composing thread #{inspect thread} #{inspect msg}")
   end
 
-  # Helper functions
+  ## Helper functions
 
   defp uuid2mention("urn:uuid:" <> uuid) do
     "@" <> uuid
