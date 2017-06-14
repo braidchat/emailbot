@@ -158,6 +158,7 @@ defmodule BraidMail.Messaging do
   end
 
   @begin_compose_msg """
+  Message to ~s
   Type the body of your email in this thread, sending as many messages as you want.
   Type `/subject <subject>` to set the subject of the email
   When you're done, type `/save` to save a draft or `/send` to send the email
@@ -173,7 +174,9 @@ defmodule BraidMail.Messaging do
 
     %{id: UUID.uuid4(:urn),
       "thread-id": new_thread_id,
-      content: @begin_compose_msg,
+      content: @begin_compose_msg
+               |> :io_lib.format([Enum.join(to_addrs, ", ")])
+               |> to_string,
       "mentioned-user-ids": [user_id],
       "mentioned-tag-ids": []}
     |> Braid.send_message()
@@ -226,6 +229,16 @@ defmodule BraidMail.Messaging do
     Gmail.save_draft(user_id, thread, fn ->
       msg
       |> Braid.make_response("Draft saved")
+      |> Braid.send_message
+    end)
+  end
+
+  defp handle_email_msg(%Thread{user_id: user_id} = thread,
+                        %{command: ["send"]} = msg)
+  do
+    Gmail.send_message(user_id, thread, fn ->
+      msg
+      |> Braid.make_response("Message sent!")
       |> Braid.send_message
     end)
   end

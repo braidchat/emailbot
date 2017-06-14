@@ -199,6 +199,30 @@ defmodule BraidMail.Gmail do
                 end)
   end
 
+  def send_message(user_id,
+                   %Thread{to: to, subject: subj, content: content} = thread,
+                   done)
+  do
+    body = ["To: #{to}", "Subject: #{subj}", "\r\n#{content}"]
+           |> Enum.join("\r\n")
+           |> Base.encode64
+           |> String.replace("+", "-")
+           |> String.replace("/", "_")
+
+    api_request(%{endpoint: "/messages/send",
+                  method: :post,
+                  body: Poison.encode!(%{raw: body}),
+                  headers: [{"content-type", "application/json"}]},
+                Repo.get_by(User, braid_id: user_id),
+                fn _ ->
+                  thread
+                  |> Thread.changeset(%{status: "sent"})
+                  |> Repo.update
+
+                  done.()
+                end)
+  end
+
   defp api_request(req, %User{gmail_token: tok} = user, done, retried \\ false)
   do
     endpoint = req[:endpoint]
