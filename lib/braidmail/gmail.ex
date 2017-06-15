@@ -3,16 +3,18 @@ defmodule BraidMail.Gmail do
   Module for interacting with the Gmail api
   """
 
+  alias BraidMail.Messaging
   alias BraidMail.Repo
-  alias BraidMail.Schemas.User
   alias BraidMail.Schemas.Thread
+  alias BraidMail.Schemas.User
+  alias BraidMail.Session
 
   @doc """
   Generate a URL to send to the given user which will ask them to authorize us
   """
   def oauth_uri(user_id) do
     token = Base.encode64(:crypto.strong_rand_bytes(15), padding: false)
-    BraidMail.Session.store(token, user_id)
+    Session.store(token, user_id)
     "https://accounts.google.com/o/oauth2/auth?" <>
       URI.encode_query %{
         "response_type" => "code",
@@ -30,7 +32,7 @@ defmodule BraidMail.Gmail do
   Given state token from OAuth, returning the associated user id if valid
   """
   def verify_state(state) do
-    BraidMail.Session.pop(state)
+    Session.pop(state)
   end
 
   @doc """
@@ -48,7 +50,7 @@ defmodule BraidMail.Gmail do
                                         gmail_refresh_token: refresh})
                     |> Repo.update()
 
-                    BraidMail.Messaging.send_connected_msg(user_id)
+                    Messaging.send_connected_msg(user_id)
                   end)
   end
 

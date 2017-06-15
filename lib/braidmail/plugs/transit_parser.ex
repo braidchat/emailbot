@@ -4,6 +4,7 @@ defmodule BraidMail.Plugs.TransitParser do
   """
   @behaviour Plug
 
+  alias BraidMail.Transit
   alias Plug.Conn
 
   def init([]), do: false
@@ -23,7 +24,7 @@ defmodule BraidMail.Plugs.TransitParser do
            with {:ok, body, _} <- Conn.read_body(conn), do: body
     case MessagePack.unpack(body) do
       {:ok, parsed} ->
-        %{conn | body_params: BraidMail.Transit.from_transit(parsed)}
+        %{conn | body_params: Transit.from_transit(parsed)}
       {:error, err} ->
         raise Plug.BadRequestError, message: "Couldn't decode msgpack: #{err}"
     end
