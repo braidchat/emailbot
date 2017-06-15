@@ -3,7 +3,7 @@ defmodule BraidMail.Session do
   Agent-based session storage
   """
 
-  def start_link() do
+  def start_link do
     Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 

@@ -23,4 +23,3 @@ defmodule BraidMail.Routes.Braid do
   end
 
 end
-
