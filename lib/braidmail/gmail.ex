@@ -75,7 +75,7 @@ defmodule BraidMail.Gmail do
     ]
     case HTTPoison.post route, {:form, body}, [] do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        case Poison.Parser.parse(body) do
+        case Poison.decode(body) do
           {:ok, creds} -> success.(creds)
           _ -> IO.puts "Failed to store creds: #{inspect body}"
         end
@@ -234,7 +234,7 @@ defmodule BraidMail.Gmail do
     headers = [{"authorization", "Bearer " <> tok}] ++ headers
     case HTTPoison.request method, uri, body, headers, params: params do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        case Poison.Parser.parse(body) do
+        case Poison.decode(body) do
           {:ok, threads} -> done.(threads)
           _ -> IO.puts "Failed to load inbox: #{inspect body}"
         end
