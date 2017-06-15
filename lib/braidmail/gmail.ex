@@ -225,16 +225,17 @@ defmodule BraidMail.Gmail do
                 end)
   end
 
+  @api_uri "https://www.googleapis.com/gmail/v1/users/me"
+
   defp api_request(req, %User{gmail_token: tok} = user, done, retried \\ false)
   do
-    endpoint = req[:endpoint]
-    method = Map.get(req, :method, :get)
-    params = Map.get(req, :params, [])
-    headers = Map.get(req, :headers, [])
-    body = Map.get(req, :body, <<>>)
-    uri = "https://www.googleapis.com/gmail/v1/users/me" <> endpoint
-    headers = [{"authorization", "Bearer " <> tok}] ++ headers
-    case HTTPoison.request method, uri, body, headers, params: params do
+    case HTTPoison.request(Map.get(req, :method, :get),
+                           @api_uri <> req[:endpoint],
+                           Map.get(req, :body, <<>>),
+                           Map.get(req, :headers, []) ++
+                             [{"authorization", "Bearer " <> tok}],
+                           params: Map.get(req, :params, []))
+    do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         case Poison.decode(body) do
           {:ok, threads} -> done.(threads)
