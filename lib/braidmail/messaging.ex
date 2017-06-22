@@ -184,16 +184,27 @@ defmodule BraidMail.Messaging do
     Braid.watch_thread(new_thread_id)
   end
 
-  defp handle_mention(%{command: ["reply", _msg_id]} = msg) do
-    # TODO:
-    # Start a new thread
-    # subscribe to new thread
-    # append messages to saved body
-    # commands: /emailbot save to save the current email as a draf
-    #           / emailbot send to send the current email
-    msg
-    |> Braid.make_response("Sorry, still a work in progress")
-    |> Braid.send_message
+  defp handle_mention(%{"user-id": user_id, command: ["reply", msg_id]}) do
+    new_thread_id = UUID.uuid4(:urn)
+
+    Repo.insert(%Thread{braid_id: new_thread_id,
+                        status: "replying",
+                        content: "",
+                        user_id: user_id,
+                        gmail_id: msg_id,
+                        # TODO: get to, subject from thread?
+                        to: nil})
+
+    %{id: UUID.uuid4(:urn),
+      "thread-id": new_thread_id,
+      content: @begin_compose_msg
+               |> :io_lib.format(msg_id)
+               |> to_string,
+      "mentioned-user-ids": [user_id],
+      "mentioned-tag-ids": []}
+    |> Braid.send_message()
+
+    Braid.watch_thread(new_thread_id)
   end
 
   @unknown_command_msg """
@@ -244,6 +255,13 @@ defmodule BraidMail.Messaging do
   end
 
   defp handle_email_msg(%Thread{status: "composing"} = thread, %{content: body})
+  do
+    {:ok, _} = thread
+               |> Thread.append_changeset(body)
+               |> Repo.update
+  end
+
+  defp handle_email_msg(%Thread{status: "replying"} = thread, %{content: body})
   do
     {:ok, _} = thread
                |> Thread.append_changeset(body)

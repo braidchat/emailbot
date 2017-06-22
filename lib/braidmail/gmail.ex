@@ -202,7 +202,8 @@ defmodule BraidMail.Gmail do
   end
 
   def send_message(user_id,
-                   %Thread{to: to, subject: subj, content: content} = thread,
+                   %Thread{to: to, subject: subj, content: content,
+                           status: "composing"} = thread,
                    done)
   do
     body = ["To: #{to}", "Subject: #{subj}", "\r\n#{content}"]
@@ -214,6 +215,32 @@ defmodule BraidMail.Gmail do
     api_request(%{endpoint: "/messages/send",
                   method: :post,
                   body: Poison.encode!(%{raw: body}),
+                  headers: [{"content-type", "application/json"}]},
+                Repo.get_by(User, braid_id: user_id),
+                fn _ ->
+                  thread
+                  |> Thread.changeset(%{status: "sent"})
+                  |> Repo.update
+
+                  done.()
+                end)
+  end
+
+  def send_message(user_id,
+                   %Thread{to: to, subject: subj, content: content,
+                           status: "replying", gmail_id: gmail_id} = thread,
+                   done)
+  do
+    body = ["To: #{to}", "Subject: #{subj}", "\r\n#{content}"]
+           |> Enum.join("\r\n")
+           |> Base.encode64
+           |> String.replace("+", "-")
+           |> String.replace("/", "_")
+
+    api_request(%{endpoint: "/messages/send",
+                  method: :post,
+                  body: Poison.encode!(%{raw: body,
+                                         threadId: gmail_id}),
                   headers: [{"content-type", "application/json"}]},
                 Repo.get_by(User, braid_id: user_id),
                 fn _ ->
