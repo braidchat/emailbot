@@ -11,7 +11,7 @@ defmodule BraidMail.Messaging do
 
   @connect_success_msg """
   Your gmail account is connected!
-  Invoke me with `/~s help` for a list of things you can do now :)
+  Invoke me with `/~ts help` for a list of things you can do now :)
   """
 
   @doc """
@@ -62,7 +62,7 @@ defmodule BraidMail.Messaging do
   @connect_link_msg """
   Click this link to authorize me to connect to your mail account.
   Make sure this message stays private! Don't mention anyone or add any tags to this thread!
-  ~s
+  ~ts
   """
 
   defp send_initial_msg(%{"user-id": user_id, command: ["connect"]}) do
@@ -76,8 +76,8 @@ defmodule BraidMail.Messaging do
   end
 
   @gmail_signup_msg """
-  Hi ~s! Looks like you haven't connected your gmail account yet.
-  Say `/~s connect` and I'll send you a link to get started.
+  Hi ~ts! Looks like you haven't connected your gmail account yet.
+  Say `/~ts connect` and I'll send you a link to get started.
   """
 
   defp send_initial_msg(%{"user-id": user_id} = msg) do
@@ -109,9 +109,9 @@ defmodule BraidMail.Messaging do
   end
 
   @show_thread_msg """
-  ID: ~s
-  From: ~s
-  Subject: ~s
+  ID: ~ts
+  From: ~ts
+  Subject: ~ts
 
   """
 
@@ -158,7 +158,7 @@ defmodule BraidMail.Messaging do
   end
 
   @begin_compose_msg """
-  Message to ~s
+  Message to ~ts
   Type the body of your email in this thread, sending as many messages as you want.
   Type `/subject <subject>` to set the subject of the email
   When you're done, type `/save` to save a draft or `/send` to send the email
@@ -208,7 +208,7 @@ defmodule BraidMail.Messaging do
   end
 
   @unknown_command_msg """
-  Sorry, I don't know what you mean; try `/~s help` the commands I know
+  Sorry, I don't know what you mean; try `/~ts help` the commands I know
   """
 
   defp handle_mention(msg) do
