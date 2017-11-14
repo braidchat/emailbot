@@ -15,7 +15,7 @@ defmodule BraidMail.Braid do
     auth = Base.encode64(user <> ":" <> pass)
     route = braid_api <> "/bots/message"
     body = msg |> Transit.to_transit |> MessagePack.pack!
-    headers = [{"Content-Type", "application/transit+msgpack"},
+    headers = [{"Content-Type", "application/transit+msgpack; charset=UTF-8"},
                {"Authorization", "Basic #{auth}"}]
     case HTTPoison.post route, body, headers do
       {:ok, %HTTPoison.Response{status_code: 201}} ->

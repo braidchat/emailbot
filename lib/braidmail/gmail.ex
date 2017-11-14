@@ -88,6 +88,40 @@ defmodule BraidMail.Gmail do
     end
   end
 
+  def load_thread_details(user_id, thread_id, done) do
+    user = Repo.get_by(User, braid_id: user_id)
+    path = "/threads/" <> thread_id
+    params = [{"format", "METADATA"},
+              {"metadataHeaders", "Subject"},
+              {"metadataHeaders", "From"},
+              {"metadataHeaders", "Message-ID"},
+              {"fields", "id,messages(payload/headers,labelIds)"}
+             ]
+
+    find_header = fn headers, field ->
+      Enum.find headers, fn %{"name" => name} ->
+        name == field
+      end
+    end
+
+    api_request(%{endpoint: path, params: params}, user, fn thread ->
+      with %{"id" => id, "messages" => [msg | _]} <- thread,
+      %{"labelIds" => labels} <- msg,
+      %{"payload" => %{"headers" => headers}} <- msg,
+      %{"value" => from} <- find_header.(headers, "From"),
+      %{"value" => msg_id} <- find_header.(headers, "Message-ID"),
+      %{"value" => subject} <- find_header.(headers, "Subject") do
+        IO.puts "Message #{msg_id}"
+        done.(%{id: id,
+                from: from,
+                subject: subject,
+                message_id: msg_id,
+                is_unread: Enum.find(labels, &(&1 == "UNREAD")) != nil
+               })
+      end
+    end)
+  end
+
   @doc """
   Get the contents of the inbox for the user with braid id `user_id`.
   The callback `done` will be called for each thread thusly loaded.
@@ -96,45 +130,15 @@ defmodule BraidMail.Gmail do
     braid_thread_id = UUID.uuid4(:urn)
     user = Repo.get_by(User, braid_id: user_id)
 
-    find_header = fn headers, field ->
-      Enum.find headers, fn %{"name" => name} ->
-        name == field
-      end
-    end
-
-    load_thread_details = fn thread_id ->
-      # Re-load user to get refreshed token
-      user = Repo.get_by(User, braid_id: user_id)
-      path = "/threads/" <> thread_id
-      params = [{"format", "METADATA"},
-                {"metadataHeaders", "Subject"},
-                {"metadataHeaders", "From"},
-                {"fields", "id,messages(payload/headers,labelIds)"}
-              ]
-        api_request(%{endpoint: path, params: params}, user, fn thread ->
-          with %{"id" => id, "messages" => [msg | _]} <- thread,
-               %{"labelIds" => labels} <- msg,
-               %{"payload" => %{"headers" => headers}} <- msg,
-               %{"value" => from} <- find_header.(headers, "From"),
-               %{"value" => subject} <- find_header.(headers, "Subject") do
-            done.(braid_thread_id,
-                  %{id: id,
-                    from: from,
-                    subject: subject,
-                    is_unread: Enum.find(labels, &(&1 == "UNREAD")) != nil
-                  })
-          end
-        end)
-    end
-
     params = [{"labelIds", "INBOX"},
               {"fields", "threads/id"}] ++
              if just_unread, do: [{"labelIds", "UNREAD"}], else: []
+    cb = fn res -> done.(braid_thread_id, res) end
     api_request(%{endpoint: "/threads", params: params}, user,
                 fn resp ->
                   with %{"threads" => threads} <- resp do
                     for %{"id" => thread_id} <- threads do
-                      spawn fn -> load_thread_details.(thread_id) end
+                      spawn fn -> load_thread_details(user_id, thread_id, cb) end
                     end
                   else
                     _ -> done.(braid_thread_id, nil)
@@ -202,9 +206,9 @@ defmodule BraidMail.Gmail do
   end
 
   def send_message(user_id,
-                   %Thread{to: to, subject: subj, content: content} = thread,
-                   done)
-  do
+                   %Thread{to: to, subject: subj, content: content,
+                           status: "composing"} = thread,
+                   done) do
     body = ["To: #{to}", "Subject: #{subj}", "\r\n#{content}"]
            |> Enum.join("\r\n")
            |> Base.encode64
@@ -214,6 +218,34 @@ defmodule BraidMail.Gmail do
     api_request(%{endpoint: "/messages/send",
                   method: :post,
                   body: Poison.encode!(%{raw: body}),
+                  headers: [{"content-type", "application/json"}]},
+                Repo.get_by(User, braid_id: user_id),
+                fn _ ->
+                  thread
+                  |> Thread.changeset(%{status: "sent"})
+                  |> Repo.update
+
+                  done.()
+                end)
+  end
+
+  def send_message(user_id,
+                   %Thread{to: to, subject: subj, content: content,
+                           reply_to: reply_id, status: "replying",
+                           gmail_id: gmail_id} = thread,
+                   done)
+  do
+  body = ["To: #{to}", "Subject: #{subj}", "In-Reply-To: #{reply_id}",
+          "References: #{reply_id}", "\r\n#{content}"]
+           |> Enum.join("\r\n")
+           |> Base.encode64
+           |> String.replace("+", "-")
+           |> String.replace("/", "_")
+
+    api_request(%{endpoint: "/messages/send",
+                  method: :post,
+                  body: Poison.encode!(%{raw: body,
+                                         threadId: gmail_id}),
                   headers: [{"content-type", "application/json"}]},
                 Repo.get_by(User, braid_id: user_id),
                 fn _ ->

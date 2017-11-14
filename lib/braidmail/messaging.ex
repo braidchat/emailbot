@@ -11,7 +11,7 @@ defmodule BraidMail.Messaging do
 
   @connect_success_msg """
   Your gmail account is connected!
-  Invoke me with `/~s help` for a list of things you can do now :)
+  Invoke me with `/~ts help` for a list of things you can do now :)
   """
 
   @doc """
@@ -62,7 +62,7 @@ defmodule BraidMail.Messaging do
   @connect_link_msg """
   Click this link to authorize me to connect to your mail account.
   Make sure this message stays private! Don't mention anyone or add any tags to this thread!
-  ~s
+  ~ts
   """
 
   defp send_initial_msg(%{"user-id": user_id, command: ["connect"]}) do
@@ -76,8 +76,8 @@ defmodule BraidMail.Messaging do
   end
 
   @gmail_signup_msg """
-  Hi ~s! Looks like you haven't connected your gmail account yet.
-  Say `/~s connect` and I'll send you a link to get started.
+  Hi ~ts! Looks like you haven't connected your gmail account yet.
+  Say `/~ts connect` and I'll send you a link to get started.
   """
 
   defp send_initial_msg(%{"user-id": user_id} = msg) do
@@ -109,9 +109,9 @@ defmodule BraidMail.Messaging do
   end
 
   @show_thread_msg """
-  ID: ~s
-  From: ~s
-  Subject: ~s
+  ID: ~ts
+  From: ~ts
+  Subject: ~ts
 
   """
 
@@ -158,7 +158,7 @@ defmodule BraidMail.Messaging do
   end
 
   @begin_compose_msg """
-  Message to ~s
+  Message to ~ts
   Type the body of your email in this thread, sending as many messages as you want.
   Type `/subject <subject>` to set the subject of the email
   When you're done, type `/save` to save a draft or `/send` to send the email
@@ -184,20 +184,39 @@ defmodule BraidMail.Messaging do
     Braid.watch_thread(new_thread_id)
   end
 
-  defp handle_mention(%{command: ["reply", _msg_id]} = msg) do
-    # TODO:
-    # Start a new thread
-    # subscribe to new thread
-    # append messages to saved body
-    # commands: /emailbot save to save the current email as a draf
-    #           / emailbot send to send the current email
-    msg
-    |> Braid.make_response("Sorry, still a work in progress")
-    |> Braid.send_message
+  @begin_reply_msg """
+  Replying to ~ts
+  Type the body of your email in this thread, sending as many messages as you want.
+  When you're done, type `/save` to save a draft or `/send` to send the email
+  """
+  defp handle_mention(%{"user-id": user_id, command: ["reply", msg_id]}) do
+    new_thread_id = UUID.uuid4(:urn)
+
+    Gmail.load_thread_details(user_id, msg_id,
+      fn %{subject: sub, message_id: reply_to_id, from: from} ->
+        Repo.insert(%Thread{braid_id: new_thread_id,
+                            status: "replying",
+                            content: "",
+                            user_id: user_id,
+                            gmail_id: msg_id,
+                            subject: sub,
+                            reply_to: reply_to_id,
+                            # TODO: get to, subject from thread?
+                            to: from})
+
+        %{id: UUID.uuid4(:urn),
+        "thread-id": new_thread_id,
+        content: @begin_reply_msg |> :io_lib.format([from]) |> to_string,
+        "mentioned-user-ids": [user_id],
+        "mentioned-tag-ids": []}
+        |> Braid.send_message()
+
+        Braid.watch_thread(new_thread_id)
+      end)
   end
 
   @unknown_command_msg """
-  Sorry, I don't know what you mean; try `/~s help` the commands I know
+  Sorry, I don't know what you mean; try `/~ts help` the commands I know
   """
 
   defp handle_mention(msg) do
@@ -211,7 +230,9 @@ defmodule BraidMail.Messaging do
 
   ## Messages to subscribed threads
 
-  defp handle_email_msg(thread, %{command: ["subject" | subject]} = msg) do
+  defp handle_email_msg(%Thread{status: "composing"} = thread,
+                        %{command: ["subject" | subject]} = msg)
+  do
     subj = Enum.join(subject, " ")
 
     thread
@@ -244,6 +265,13 @@ defmodule BraidMail.Messaging do
   end
 
   defp handle_email_msg(%Thread{status: "composing"} = thread, %{content: body})
+  do
+    {:ok, _} = thread
+               |> Thread.append_changeset(body)
+               |> Repo.update
+  end
+
+  defp handle_email_msg(%Thread{status: "replying"} = thread, %{content: body})
   do
     {:ok, _} = thread
                |> Thread.append_changeset(body)
