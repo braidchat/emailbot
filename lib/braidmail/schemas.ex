@@ -13,6 +13,7 @@ defmodule BraidMail.Schemas.Thread do
     field :user_id
     field :to
     field :subject
+    field :reply_to
   end
 
   def changeset(thread, params) do

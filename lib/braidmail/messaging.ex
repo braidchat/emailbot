@@ -184,27 +184,35 @@ defmodule BraidMail.Messaging do
     Braid.watch_thread(new_thread_id)
   end
 
+  @begin_reply_msg """
+  Replying to ~ts
+  Type the body of your email in this thread, sending as many messages as you want.
+  When you're done, type `/save` to save a draft or `/send` to send the email
+  """
   defp handle_mention(%{"user-id": user_id, command: ["reply", msg_id]}) do
     new_thread_id = UUID.uuid4(:urn)
 
-    Repo.insert(%Thread{braid_id: new_thread_id,
-                        status: "replying",
-                        content: "",
-                        user_id: user_id,
-                        gmail_id: msg_id,
-                        # TODO: get to, subject from thread?
-                        to: nil})
+    Gmail.load_thread_details(user_id, msg_id,
+      fn %{subject: sub, message_id: reply_to_id, from: from} ->
+        Repo.insert(%Thread{braid_id: new_thread_id,
+                            status: "replying",
+                            content: "",
+                            user_id: user_id,
+                            gmail_id: msg_id,
+                            subject: sub,
+                            reply_to: reply_to_id,
+                            # TODO: get to, subject from thread?
+                            to: from})
 
-    %{id: UUID.uuid4(:urn),
-      "thread-id": new_thread_id,
-      content: @begin_compose_msg
-               |> :io_lib.format(msg_id)
-               |> to_string,
-      "mentioned-user-ids": [user_id],
-      "mentioned-tag-ids": []}
-    |> Braid.send_message()
+        %{id: UUID.uuid4(:urn),
+        "thread-id": new_thread_id,
+        content: @begin_reply_msg |> :io_lib.format([from]) |> to_string,
+        "mentioned-user-ids": [user_id],
+        "mentioned-tag-ids": []}
+        |> Braid.send_message()
 
-    Braid.watch_thread(new_thread_id)
+        Braid.watch_thread(new_thread_id)
+      end)
   end
 
   @unknown_command_msg """
@@ -222,7 +230,9 @@ defmodule BraidMail.Messaging do
 
   ## Messages to subscribed threads
 
-  defp handle_email_msg(thread, %{command: ["subject" | subject]} = msg) do
+  defp handle_email_msg(%Thread{status: "composing"} = thread,
+                        %{command: ["subject" | subject]} = msg)
+  do
     subj = Enum.join(subject, " ")
 
     thread
