@@ -17,6 +17,22 @@ Run `mix ecto.create` and `mix ecto.migrate` to set up the database.
 Create `config/prod.exs` and populate it with the appropriate information.
 See `config/test.exs` for a reference of the config info that should be set.
 
+You'll probably also want to put `config :mnesia, :dir, 'data/mnesia'` in `prod.exs`.
+
+To create the release artifact, run
+
+```
+$ MIX_ENV=prod mix release --env=prod
+```
+
+Then find the created tarball under `_build/prod/rel/braidmail/releases/`, upload it to your server, and extract it.
+You'll also want to create a directory for the Mnesia database (e.g. `mkdir -p data/mnesia`).
+The bot can then be started as a daemon with `bin/braidmail start` or `bin/braidmail foreground` to run in the foreground (e.g. with Supervisor).
+To point the database to the correct host, you'll need to set an environment variable: `MNESIA_HOST=braidmail@127.0.0.1`.
+This only seems necessary when starting the server, but not when running the migrations.
+
+Connect to the running process with `bin/braidmail remote_console`.
+
 ## Integrations Setup
 
 ### Braid Config

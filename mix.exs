@@ -16,7 +16,7 @@ defmodule BraidMail.Mixfile do
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
     [extra_applications: [:logger, :cowboy, :plug, :timex, :httpoison,
-                          :ecto_mnesia, :ecto],
+                          :confex, :ecto_mnesia, :ecto],
      env: [listen_port: 4040,
            braid_token: "",
            braid_id: "",
@@ -46,6 +46,8 @@ defmodule BraidMail.Mixfile do
      {:ecto, "~> 2.1"},
      {:poison, "~> 3.0"},
      {:html_entities, "~> 0.3"},
+     {:distillery, "~> 1.5", runtime: false},
+     {:confex, "~> 1.5"},
    ]
   end
 end
